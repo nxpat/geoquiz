@@ -97,52 +97,31 @@
       white-space: nowrap; flex-shrink: 0;
     }
 
-    /* ── HAMBURGER MENU ── */
-    .hamburger-wrap { position: relative; flex-shrink: 0; }
-    .hamburger-btn {
+    /* ── INLINE SWITCHERS ── */
+    .switchers-wrap {
+      display: flex; align-items: center; gap: 8px;
       background: rgba(255,255,255,0.15);
       border: 1px solid rgba(255,255,255,0.3);
-      color: #FFFFFF;
-      width: 38px; height: 38px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-      transition: background 0.15s;
+      border-radius: 20px; padding: 4px 10px;
+      flex-shrink: 0;
     }
-    .hamburger-btn:hover { background: rgba(255,255,255,0.25); }
-    .hamburger-btn .bar { width: 18px; height: 2px; background: #FFFFFF; border-radius: 1px; transition: all 0.25s; }
-    .hamburger-wrap.open .hamburger-btn .bar:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
-    .hamburger-wrap.open .hamburger-btn .bar:nth-child(2) { opacity: 0; }
-    .hamburger-wrap.open .hamburger-btn .bar:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
-    .hamburger-menu {
-      display: none;
-      position: absolute; top: calc(100% + 8px); right: 0;
-      background: var(--blanc);
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-      min-width: 180px;
-      z-index: 200;
-      overflow: hidden;
+    .lang-btn {
+      text-decoration: none; font-size: 1.1rem;
+      opacity: 0.4; transition: opacity 0.2s, transform 0.2s;
+      display: flex; align-items: center; justify-content: center;
     }
-    .hamburger-wrap.open .hamburger-menu { display: block; }
-    .menu-section-label {
-      padding: 10px 16px 4px;
-      font-size: 0.68rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--gris);
+    .lang-btn:hover { opacity: 0.8; transform: scale(1.1); }
+    .lang-btn.active { opacity: 1; transform: scale(1.1); pointer-events: none; }
+    
+    .theme-divider {
+      width: 1px; height: 18px; background: rgba(255,255,255,0.3); margin: 0 2px;
     }
-    .menu-divider { height: 1px; background: var(--border-light); margin: 4px 0; }
-    .menu-option {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 16px;
-      color: var(--text-primary); text-decoration: none;
-      font-size: 0.88rem; font-weight: 500;
-      transition: background 0.12s;
-      cursor: pointer;
+    .theme-toggle {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.1rem; padding: 0; display: flex; align-items: center;
+      transition: transform 0.2s;
     }
-    .menu-option:hover { background: var(--border-light); }
-    .menu-option.active { background: var(--hover-light); color: var(--text-primary); font-weight: 700; }
-    .menu-option .check { margin-left: auto; font-size: 0.8rem; }
+    .theme-toggle:hover { transform: scale(1.1); }
 
     /* ── MAIN ── */
     main { max-width: 680px; margin: 0 auto; padding: 28px 16px 80px; }
@@ -273,31 +252,21 @@
       <div class="score-badge">{% block score_header %}{% endblock %}</div>
       {% endif %}
 
-      <!-- Hamburger menu -->
-      <div class="hamburger-wrap" id="hamburgerMenu">
-        <button class="hamburger-btn" onclick="toggleHamburger()" type="button" aria-label="Menu">
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
+      <!-- Inline Switchers -->
+      <div class="switchers-wrap">
+        {% for lang_code in supported_langs %}
+        <a href="{{ url_for('main.set_lang', lang=lang_code, next=request.path) }}"
+           class="lang-btn {{ 'active' if current_lang == lang_code else '' }}"
+           title="{{ translations[lang_code]['lang_name'] }}">
+          {{ translations[lang_code]['lang_flag'] }}
+        </a>
+        {% endfor %}
+        
+        <div class="theme-divider"></div>
+        
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle Theme">
+          ☀️
         </button>
-        <div class="hamburger-menu">
-          <div class="menu-section-label">{{ t('theme_section') }}</div>
-          <a href="#" class="menu-option" data-theme="light" onclick="setTheme('light');return false;">
-            ☀️ Light <span class="check" style="display:none">✓</span>
-          </a>
-          <a href="#" class="menu-option" data-theme="dark" onclick="setTheme('dark');return false;">
-            🌙 Dark <span class="check" style="display:none">✓</span>
-          </a>
-          <div class="menu-divider"></div>
-          <div class="menu-section-label">{{ t('lang_section') }}</div>
-          {% for lang_code in supported_langs %}
-          <a href="{{ url_for('main.set_lang', lang=lang_code, next=request.path) }}"
-             class="menu-option {{ 'active' if current_lang == lang_code else '' }}">
-            {{ translations[lang_code]['lang_flag'] }} {{ translations[lang_code]['lang_name'] }}
-            {% if current_lang == lang_code %}<span class="check">✓</span>{% endif %}
-          </a>
-          {% endfor %}
-        </div>
       </div>
     </div>
   </header>
@@ -307,29 +276,24 @@
   </main>
 
   <script>
-    /* ── Hamburger menu ── */
-    function toggleHamburger() {
-      document.getElementById('hamburgerMenu').classList.toggle('open');
+    /* ── Theme Toggle ── */
+    function toggleTheme() {
+      var current = document.documentElement.getAttribute('data-theme') || 'light';
+      var nextTheme = current === 'light' ? 'dark' : 'light';
+      
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('theme', nextTheme);
+      updateThemeUI(nextTheme);
     }
-    document.addEventListener('click', function(e) {
-      var menu = document.getElementById('hamburgerMenu');
-      if (menu && !menu.contains(e.target)) menu.classList.remove('open');
-    });
 
-    /* ── Theme ── */
-    function setTheme(theme) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-      updateThemeUI(theme);
-    }
     function updateThemeUI(theme) {
-      document.querySelectorAll('.menu-option[data-theme]').forEach(function(el) {
-        var active = el.getAttribute('data-theme') === theme;
-        el.classList.toggle('active', active);
-        var chk = el.querySelector('.check');
-        if (chk) chk.style.display = active ? '' : 'none';
-      });
+      var btn = document.getElementById('themeBtn');
+      if (btn) {
+        btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+      }
     }
+    
+    // Initialize UI on load
     updateThemeUI(localStorage.getItem('theme') || 'light');
   </script>
 </body>
