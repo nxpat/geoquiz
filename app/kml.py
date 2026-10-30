@@ -16,6 +16,7 @@ import re
 import urllib.request
 
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
 from .models import Question
 
@@ -118,7 +119,7 @@ def sync_plaque_coords() -> tuple[int, str]:
         )
         with urllib.request.urlopen(req, timeout=15) as resp:
             kml_data = resp.read().decode("utf-8")
-    except Exception as e:
+    except (OSError, UnicodeDecodeError) as e:
         msg = f"Téléchargement KML échoué : {e}"
         print(f"[sync] {msg}")
         return 0, msg
@@ -205,7 +206,7 @@ def sync_plaque_coords() -> tuple[int, str]:
 
     try:
         questions = Question.query.all()
-    except Exception:
+    except SQLAlchemyError:
         questions = []
 
     if not questions:

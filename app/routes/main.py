@@ -38,10 +38,14 @@ def set_lang(lang):
 @bp.route("/")
 def index():
     admin_ok = session.get("admin_ok", False)
-    lang = session.get("lang", "fr")
+
+    # Use get_lang() to trigger the auto-detect logic instead of hardcoding "fr"
+    lang = get_lang()
+
     session.clear()
     if admin_ok:
         session["admin_ok"] = True
+
     session["lang"] = lang
     session["reponses_ids"] = []
     session["score"] = 0

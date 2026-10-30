@@ -8,6 +8,7 @@ import os
 
 from dotenv import load_dotenv
 from flask import Flask
+from sqlalchemy.exc import SQLAlchemyError
 
 from .config import Config
 from .extensions import db
@@ -82,7 +83,7 @@ def create_app(config_class: type = Config) -> Flask:
         print("[startup] Synchronisation des coordonnées depuis Google My Maps...")
         try:
             sync_plaque_coords()
-        except Exception as e:
+        except (OSError, SQLAlchemyError, UnicodeDecodeError, ValueError) as e:
             print(f"[startup] KML sync failed: {e}")
 
     return app
