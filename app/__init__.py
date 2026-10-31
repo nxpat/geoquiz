@@ -8,10 +8,10 @@ import os
 
 from dotenv import load_dotenv
 from flask import Flask
-from sqlalchemy.exc import SQLAlchemyError
 
 from .config import Config
 from .extensions import db
+from .kml import sync_plaque_coords
 
 # Load .env at import time so os.environ is populated before Config is read
 load_dotenv()
@@ -28,6 +28,14 @@ def create_app(config_class: type = Config) -> Flask:
 
     # ── Extensions ─────────────────────────────────────────
     db.init_app(app)
+
+    # 1. Import models so Alembic can detect them
+    from flask_migrate import Migrate
+
+    from . import models
+
+    # 2. Initialize Migrate
+    migrate = Migrate(app, db, render_as_batch=True)
 
     # ── Context processor: expose translations to templates ─
     from .translations import SUPPORTED_LANGS, TRANSLATIONS, get_lang, t
@@ -73,17 +81,20 @@ def create_app(config_class: type = Config) -> Flask:
 
     # ── DB init + seed + KML sync ──────────────────────────
     from .db_utils import migrate_db, seed_questions
-    from .kml import sync_plaque_coords
 
     with app.app_context():
-        db.create_all()
+        # db.create_all()
         migrate_db()
         seed_questions()
-        # Synchronise les coordonnées depuis Google My Maps
-        print("[startup] Synchronisation des coordonnées depuis Google My Maps...")
+        sync_plaque_coords()
+
+    import json
+
+    @app.template_filter("fromjson")
+    def fromjson_filter(value):
         try:
-            sync_plaque_coords()
-        except (OSError, SQLAlchemyError, UnicodeDecodeError, ValueError) as e:
-            print(f"[startup] KML sync failed: {e}")
+            return json.loads(value)
+        except (ValueError, TypeError):
+            return []
 
     return app

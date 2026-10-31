@@ -1,90 +1,93 @@
 """Database models."""
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 
 from .extensions import db
 
 
 class Question(db.Model):
+    __tablename__ = "question"
+
+    # 1. Language-Agnostic Core Data
     id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(10), nullable=False, unique=True)
-    rue = db.Column(db.String(200), nullable=False)
-    # French (obligatoire)
-    question = db.Column(db.Text, nullable=False)
-    choix = db.Column(db.Text, nullable=False)
-    reponse = db.Column(db.String(300), nullable=False)
-    commentaire_bon = db.Column(db.Text, nullable=False)
-    commentaire_mauvais = db.Column(db.Text, nullable=False)
-    # English (optionnel)
-    question_en = db.Column(db.Text, nullable=True)
-    choix_en = db.Column(db.Text, nullable=True)
-    reponse_en = db.Column(db.String(300), nullable=True)
-    commentaire_bon_en = db.Column(db.Text, nullable=True)
-    commentaire_mauvais_en = db.Column(db.Text, nullable=True)
-    # Korean (optionnel)
-    question_ko = db.Column(db.Text, nullable=True)
-    choix_ko = db.Column(db.Text, nullable=True)
-    reponse_ko = db.Column(db.String(300), nullable=True)
-    commentaire_bon_ko = db.Column(db.Text, nullable=True)
-    commentaire_mauvais_ko = db.Column(db.Text, nullable=True)
-    # Meta
+    code = db.Column(db.String(10), unique=True, nullable=False)
+    rue = db.Column(db.String(100), nullable=False)
     active = db.Column(db.Boolean, default=True)
     ordre = db.Column(db.Integer, default=0)
 
-    def choix_list(self, lang="fr"):
-        raw = None
-        if lang == "en" and self.choix_en:
-            raw = self.choix_en
-        elif lang == "ko" and self.choix_ko:
-            raw = self.choix_ko
+    lat = db.Column(db.Float, nullable=True)
+    lng = db.Column(db.Float, nullable=True)
 
-        if not raw:
-            raw = self.choix
+    # 2. Relationship to Translations
+    # cascade="all, delete-orphan" ensures translations are deleted if the question is deleted
+    translations = db.relationship(
+        "QuestionTranslation",
+        backref="question",
+        cascade="all, delete-orphan",
+        lazy="joined",
+    )
 
-        try:
-            return json.loads(raw)
-        except (json.JSONDecodeError, TypeError):
-            # This print will instantly tell you if a database row has broken JSON
-            print(
-                f"[debug] Invalid JSON in choix for lang={lang}, Question Code={self.code}: {raw}"
-            )
-            return json.loads(self.choix)
+    def get_translation(self, lang_code):
+        """Fetches the requested translation, or falls back to French."""
+        for t in self.translations:
+            if t.language_code == lang_code:
+                return t
+
+        # Fallback to French if the requested language isn't found
+        for t in self.translations:
+            if t.language_code == "fr":
+                return t
+
+        return None  # Failsafe if no translations exist at all
 
     def to_dict(self, lang="fr"):
-        # Added .strip() to ensure empty string rows don't cause false positives
-        if lang == "en" and self.question_en and self.question_en.strip():
-            question = self.question_en
-            choix = self.choix_list("en")
-            reponse = self.reponse_en or self.reponse
-            comm_bon = self.commentaire_bon_en or self.commentaire_bon
-            comm_mauv = self.commentaire_mauvais_en or self.commentaire_mauvais
+        trans = self.get_translation(lang)
 
-        elif lang == "ko" and self.question_ko and self.question_ko.strip():
-            question = self.question_ko
-            choix = self.choix_list("ko")
-            reponse = self.reponse_ko or self.reponse
-            comm_bon = self.commentaire_bon_ko or self.commentaire_bon
-            comm_mauv = self.commentaire_mauvais_ko or self.commentaire_mauvais
-
-        else:
-            question = self.question
-            choix = self.choix_list("fr")
-            reponse = self.reponse
-            comm_bon = self.commentaire_bon
-            comm_mauv = self.commentaire_mauvais
+        # Safely parse JSON choices
+        choix_list = []
+        if trans and trans.choix:
+            try:
+                choix_list = json.loads(trans.choix)
+            except Exception:
+                choix_list = []
 
         return {
             "id": self.id,
             "code": self.code,
             "rue": self.rue,
-            "question": question,
-            "choix": choix,
-            "reponse": reponse,
-            "commentaire_bon": comm_bon,
-            "commentaire_mauvais": comm_mauv,
             "active": self.active,
+            # Merge translated fields
+            "question": trans.question_text if trans else "",
+            "choix": choix_list,
+            "reponse": trans.reponse if trans else "",
+            "commentaire_bon": trans.commentaire_bon if trans else "",
+            "commentaire_mauvais": trans.commentaire_mauvais if trans else "",
         }
+
+
+class QuestionTranslation(db.Model):
+    __tablename__ = "question_translation"
+
+    id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, db.ForeignKey("question.id"), nullable=False)
+
+    # e.g., 'fr', 'en', 'ko'
+    language_code = db.Column(db.String(5), nullable=False)
+
+    # 3. Localized Data Fields
+    question_text = db.Column(db.Text, nullable=False)
+    choix = db.Column(db.Text, nullable=False)  # Stored as JSON string
+    reponse = db.Column(db.String(255), nullable=False)
+    commentaire_bon = db.Column(db.Text)
+    commentaire_mauvais = db.Column(db.Text)
+
+    # Prevent duplicate translations for the same language on a single question
+    __table_args__ = (
+        db.UniqueConstraint(
+            "question_id", "language_code", name="uix_question_language"
+        ),
+    )
 
 
 class Participant(db.Model):
@@ -94,7 +97,9 @@ class Participant(db.Model):
     email = db.Column(db.String(200), nullable=False)
     score = db.Column(db.Integer, default=0)
     nb_reponses = db.Column(db.Integer, default=0)
-    date_debut = db.Column(db.DateTime, default=datetime.utcnow)
+    date_debut = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
     termine = db.Column(db.Boolean, default=False)
 
 
@@ -104,5 +109,5 @@ class ReponseLog(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey("question.id"), nullable=True)
     reponse = db.Column(db.String(300))
     bonne = db.Column(db.Boolean, default=False)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC))
     question = db.relationship("Question", backref="logs")

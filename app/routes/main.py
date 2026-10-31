@@ -14,7 +14,7 @@ from flask import (
 
 from ..extensions import db
 from ..helpers import email_valid, init_session
-from ..kml import PLAQUE_COORDS, PLAQUE_MEDIA
+from ..kml import PLAQUE_MEDIA
 from ..models import Participant, Question
 from ..translations import SUPPORTED_LANGS, get_lang, t
 
@@ -56,23 +56,24 @@ def index():
 def carte():
     init_session()
     total = Question.query.filter_by(active=True).count()
-    # Build map data: street name + approximate coordinates ONLY.
-    # NEVER send codes to the browser — users must find the physical plaques.
+
+    # Build map data using database coordinates directly
     questions_map_data = []
     for q in (
         Question.query.filter_by(active=True)
         .order_by(Question.ordre, Question.id)
         .all()
     ):
-        coords = PLAQUE_COORDS.get(q.code)
-        if coords:
+        # Only add to map if coordinates exist in the database
+        if q.lat is not None and q.lng is not None:
             questions_map_data.append(
                 {
                     "rue": q.rue,
-                    "lat": coords["lat"],
-                    "lng": coords["lng"],
+                    "lat": q.lat,
+                    "lng": q.lng,
                 }
             )
+
     return render_template(
         "carte.html",
         score=session["score"],

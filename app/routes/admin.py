@@ -18,8 +18,7 @@ from flask import (
 
 from ..extensions import db
 from ..helpers import admin_required
-from ..kml import sync_plaque_coords
-from ..models import Participant, Question, ReponseLog
+from ..models import Participant, Question, QuestionTranslation, ReponseLog
 
 bp = Blueprint("admin", __name__)
 
@@ -63,16 +62,6 @@ def admin_logout():
     return redirect(url_for("admin.admin"))
 
 
-@bp.route("/admin/sync-map")
-def admin_sync_map():
-    """Synchronise les coordonnées des plaques depuis Google My Maps."""
-    if not admin_required():
-        return redirect(url_for("admin.admin"))
-    _nb, msg = sync_plaque_coords()
-    flash(f"🗺️ {msg}", "succes")
-    return redirect(url_for("admin.admin"))
-
-
 @bp.route("/admin/questions")
 def admin_questions():
     if not admin_required():
@@ -82,39 +71,15 @@ def admin_questions():
 
 
 def _parse_question_form(form):
-    """Parse and validate multilingual question form fields."""
+    """Parse and validate multilingual question form fields into a relational structure."""
     code = form.get("code", "").strip()
     rue = form.get("rue", "").strip()
-    # FR
-    q_fr = form.get("question", "").strip()
-    c1, c2, c3 = (
-        form.get("choix1", "").strip(),
-        form.get("choix2", "").strip(),
-        form.get("choix3", "").strip(),
-    )
-    rep_fr = form.get("reponse", "").strip()
-    cb_fr = form.get("commentaire_bon", "").strip()
-    cm_fr = form.get("commentaire_mauvais", "").strip()
-    # EN
-    q_en = form.get("question_en", "").strip()
-    c1e, c2e, c3e = (
-        form.get("choix1_en", "").strip(),
-        form.get("choix2_en", "").strip(),
-        form.get("choix3_en", "").strip(),
-    )
-    rep_en = form.get("reponse_en", "").strip()
-    cb_en = form.get("commentaire_bon_en", "").strip()
-    cm_en = form.get("commentaire_mauvais_en", "").strip()
-    # KO
-    q_ko = form.get("question_ko", "").strip()
-    c1k, c2k, c3k = (
-        form.get("choix1_ko", "").strip(),
-        form.get("choix2_ko", "").strip(),
-        form.get("choix3_ko", "").strip(),
-    )
-    rep_ko = form.get("reponse_ko", "").strip()
-    cb_ko = form.get("commentaire_bon_ko", "").strip()
-    cm_ko = form.get("commentaire_mauvais_ko", "").strip()
+
+    # Extract coordinates
+    lat_str = form.get("lat", "").strip()
+    lng_str = form.get("lng", "").strip()
+    lat = float(lat_str) if lat_str else None
+    lng = float(lng_str) if lng_str else None
 
     erreurs = []
     if not code:
@@ -123,53 +88,55 @@ def _parse_question_form(form):
         erreurs.append("Le code doit être numérique.")
     if not rue:
         erreurs.append("Le nom de rue est obligatoire.")
-    if not q_fr:
-        erreurs.append("La question (FR) est obligatoire.")
-    if not (c1 and c2 and c3):
-        erreurs.append("Les 3 choix (FR) sont obligatoires.")
-    if not rep_fr:
-        erreurs.append("La bonne réponse (FR) est obligatoire.")
-    elif rep_fr not in [c1, c2, c3]:
-        erreurs.append("La bonne réponse (FR) doit être un des 3 choix.")
-    if any([q_en, c1e, c2e, c3e, rep_en]):
-        if not (c1e and c2e and c3e):
-            erreurs.append(
-                "Les 3 choix (EN) sont obligatoires si la version anglaise est renseignée."
-            )
-        elif rep_en and rep_en not in [c1e, c2e, c3e]:
-            erreurs.append("La bonne réponse (EN) doit être un des 3 choix anglais.")
-    if any([q_ko, c1k, c2k, c3k, rep_ko]):
-        if not (c1k and c2k and c3k):
-            erreurs.append(
-                "Les 3 choix (KO) sont obligatoires si la version coréenne est renseignée."
-            )
-        elif rep_ko and rep_ko not in [c1k, c2k, c3k]:
-            erreurs.append("La bonne réponse (KO) doit être un des 3 choix coréens.")
 
-    data = {
-        "code": code,
-        "rue": rue,
-        "question": q_fr,
-        "choix": json.dumps([c1, c2, c3], ensure_ascii=False),
-        "reponse": rep_fr,
-        "commentaire_bon": cb_fr,
-        "commentaire_mauvais": cm_fr,
-        "question_en": q_en or None,
-        "choix_en": json.dumps([c1e, c2e, c3e], ensure_ascii=False)
-        if (c1e and c2e and c3e)
-        else None,
-        "reponse_en": rep_en or None,
-        "commentaire_bon_en": cb_en or None,
-        "commentaire_mauvais_en": cm_en or None,
-        "question_ko": q_ko or None,
-        "choix_ko": json.dumps([c1k, c2k, c3k], ensure_ascii=False)
-        if (c1k and c2k and c3k)
-        else None,
-        "reponse_ko": rep_ko or None,
-        "commentaire_bon_ko": cb_ko or None,
-        "commentaire_mauvais_ko": cm_ko or None,
-    }
-    return erreurs, data
+    translations_data = {}
+
+    # Helper function to extract and validate a specific language
+    def extract_lang(lang_code, suffix=""):
+        q_text = form.get(f"question{suffix}", "").strip()
+        c1 = form.get(f"choix1{suffix}", "").strip()
+        c2 = form.get(f"choix2{suffix}", "").strip()
+        c3 = form.get(f"choix3{suffix}", "").strip()
+        rep = form.get(f"reponse{suffix}", "").strip()
+        cb = form.get(f"commentaire_bon{suffix}", "").strip()
+        cm = form.get(f"commentaire_mauvais{suffix}", "").strip()
+
+        has_data = any([q_text, c1, c2, c3, rep])
+        is_required = lang_code == "fr"
+
+        if has_data or is_required:
+            if not q_text:
+                erreurs.append(f"La question ({lang_code.upper()}) est obligatoire.")
+            if not (c1 and c2 and c3):
+                erreurs.append(f"Les 3 choix ({lang_code.upper()}) sont obligatoires.")
+            if not rep:
+                erreurs.append(
+                    f"La bonne réponse ({lang_code.upper()}) est obligatoire."
+                )
+            elif rep not in [c1, c2, c3]:
+                erreurs.append(
+                    f"La bonne réponse ({lang_code.upper()}) doit être un des 3 choix."
+                )
+
+            # If valid, package the translation
+            if not erreurs or has_data:
+                translations_data[lang_code] = {
+                    "question_text": q_text,
+                    "choix": json.dumps([c1, c2, c3], ensure_ascii=False)
+                    if (c1 and c2 and c3)
+                    else "[]",
+                    "reponse": rep,
+                    "commentaire_bon": cb or None,
+                    "commentaire_mauvais": cm or None,
+                }
+
+    # Extract all three languages
+    extract_lang("fr", "")
+    extract_lang("en", "_en")
+    extract_lang("ko", "_ko")
+
+    core_data = {"code": code, "rue": rue, "lat": lat, "lng": lng}
+    return erreurs, core_data, translations_data
 
 
 @bp.route("/admin/questions/nouvelle", methods=["GET", "POST"])
@@ -177,9 +144,11 @@ def admin_question_nouvelle():
     if not admin_required():
         return redirect(url_for("admin.admin"))
     if request.method == "POST":
-        erreurs, data = _parse_question_form(request.form)
-        if not erreurs and Question.query.filter_by(code=data["code"]).first():
-            erreurs.append(f"Le code {data['code']} est déjà utilisé.")
+        erreurs, core_data, translations_data = _parse_question_form(request.form)
+
+        if not erreurs and Question.query.filter_by(code=core_data["code"]).first():
+            erreurs.append(f"Le code {core_data['code']} est déjà utilisé.")
+
         if erreurs:
             return render_template(
                 "admin_question_form.html",
@@ -188,12 +157,20 @@ def admin_question_nouvelle():
                 form=request.form,
                 q=None,
             )
+
         max_ordre = db.session.query(db.func.max(Question.ordre)).scalar() or 0
-        q = Question(ordre=max_ordre + 1, active=True, **data)
+        q = Question(ordre=max_ordre + 1, active=True, **core_data)
+
+        # Attach the relational translations
+        for lang_code, t_data in translations_data.items():
+            t = QuestionTranslation(language_code=lang_code, **t_data)
+            q.translations.append(t)
+
         db.session.add(q)
         db.session.commit()
-        flash(f'Question "{data["rue"]}" ajoutée avec succès !', "succes")
+        flash(f'Question "{core_data["rue"]}" ajoutée avec succès !', "succes")
         return redirect(url_for("admin.admin_questions"))
+
     return render_template(
         "admin_question_form.html", mode="nouvelle", erreurs=[], form={}, q=None
     )
@@ -206,11 +183,13 @@ def admin_question_modifier(qid):
     q = db.session.get(Question, qid)
     if not q:
         abort(404)
+
     if request.method == "POST":
-        erreurs, data = _parse_question_form(request.form)
-        existing = Question.query.filter_by(code=data["code"]).first()
+        erreurs, core_data, translations_data = _parse_question_form(request.form)
+        existing = Question.query.filter_by(code=core_data["code"]).first()
         if existing and existing.id != qid:
             erreurs.append("Ce code est déjà utilisé par une autre question.")
+
         if erreurs:
             return render_template(
                 "admin_question_form.html",
@@ -219,44 +198,75 @@ def admin_question_modifier(qid):
                 form=request.form,
                 q=q,
             )
-        for key, val in data.items():
-            setattr(q, key, val)
+
+        # Update core
+        q.code = core_data["code"]
+        q.rue = core_data["rue"]
+
+        # Update or Add translations
+        for lang_code, t_data in translations_data.items():
+            existing_t = q.get_translation(lang_code)
+            if existing_t and existing_t.language_code == lang_code:
+                for key, val in t_data.items():
+                    setattr(existing_t, key, val)
+            else:
+                new_t = QuestionTranslation(language_code=lang_code, **t_data)
+                q.translations.append(new_t)
+
         db.session.commit()
         flash(f'Question "{q.rue}" modifiée avec succès !', "succes")
         return redirect(url_for("admin.admin_questions"))
 
-    cl_fr = q.choix_list("fr")
-    cl_en = q.choix_list("en") if q.choix_en else ["", "", ""]
-    cl_ko = q.choix_list("ko") if q.choix_ko else ["", "", ""]
+    # Helper to extract JSON arrays for the form
+    def get_choix_safe(trans, index):
+        if trans and trans.choix:
+            try:
+                arr = json.loads(trans.choix)
+                return arr[index] if len(arr) > index else ""
+            except:
+                pass
+        return ""
 
-    def safe(lst, i):
-        return lst[i] if len(lst) > i else ""
+    t_fr = q.get_translation("fr")
+    t_en = (
+        q.get_translation("en")
+        if any(t.language_code == "en" for t in q.translations)
+        else None
+    )
+    t_ko = (
+        q.get_translation("ko")
+        if any(t.language_code == "ko" for t in q.translations)
+        else None
+    )
 
     form = {
         "code": q.code,
         "rue": q.rue,
-        "question": q.question,
-        "choix1": safe(cl_fr, 0),
-        "choix2": safe(cl_fr, 1),
-        "choix3": safe(cl_fr, 2),
-        "reponse": q.reponse,
-        "commentaire_bon": q.commentaire_bon,
-        "commentaire_mauvais": q.commentaire_mauvais,
-        "question_en": q.question_en or "",
-        "choix1_en": safe(cl_en, 0),
-        "choix2_en": safe(cl_en, 1),
-        "choix3_en": safe(cl_en, 2),
-        "reponse_en": q.reponse_en or "",
-        "commentaire_bon_en": q.commentaire_bon_en or "",
-        "commentaire_mauvais_en": q.commentaire_mauvais_en or "",
-        "question_ko": q.question_ko or "",
-        "choix1_ko": safe(cl_ko, 0),
-        "choix2_ko": safe(cl_ko, 1),
-        "choix3_ko": safe(cl_ko, 2),
-        "reponse_ko": q.reponse_ko or "",
-        "commentaire_bon_ko": q.commentaire_bon_ko or "",
-        "commentaire_mauvais_ko": q.commentaire_mauvais_ko or "",
+        "lat": q.lat if q.lat is not None else "",
+        "lng": q.lng if q.lng is not None else "",
+        "question": t_fr.question_text if t_fr else "",
+        "choix1": get_choix_safe(t_fr, 0),
+        "choix2": get_choix_safe(t_fr, 1),
+        "choix3": get_choix_safe(t_fr, 2),
+        "reponse": t_fr.reponse if t_fr else "",
+        "commentaire_bon": t_fr.commentaire_bon if t_fr else "",
+        "commentaire_mauvais": t_fr.commentaire_mauvais if t_fr else "",
+        "question_en": t_en.question_text if t_en else "",
+        "choix1_en": get_choix_safe(t_en, 0),
+        "choix2_en": get_choix_safe(t_en, 1),
+        "choix3_en": get_choix_safe(t_en, 2),
+        "reponse_en": t_en.reponse if t_en else "",
+        "commentaire_bon_en": t_en.commentaire_bon if t_en else "",
+        "commentaire_mauvais_en": t_en.commentaire_mauvais if t_en else "",
+        "question_ko": t_ko.question_text if t_ko else "",
+        "choix1_ko": get_choix_safe(t_ko, 0),
+        "choix2_ko": get_choix_safe(t_ko, 1),
+        "choix3_ko": get_choix_safe(t_ko, 2),
+        "reponse_ko": t_ko.reponse if t_ko else "",
+        "commentaire_bon_ko": t_ko.commentaire_bon if t_ko else "",
+        "commentaire_mauvais_ko": t_ko.commentaire_mauvais if t_ko else "",
     }
+
     return render_template(
         "admin_question_form.html", mode="modifier", erreurs=[], form=form, q=q
     )

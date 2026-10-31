@@ -100,7 +100,7 @@
 
     <form method="POST">
 
-      <!-- ── Code + Rue (commun à toutes les langues) ── -->
+      <!-- ── Code + Rue + Lat + Lng (commun à toutes les langues) ── -->
       <div class="form-row">
         <div class="form-group">
           <label>Code de la plaque <span class="hint">(ex: 1031)</span></label>
@@ -109,6 +109,19 @@
         <div class="form-group">
           <label>Nom de rue / Personnage</label>
           <input type="text" name="rue" value="{{ form.get('rue','') }}" placeholder="Rue Claude MONET" required />
+        </div>
+      </div>
+
+      <hr class="section-sep" />
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lat">Latitude</label>
+          <input id="lat" type="number" step="any" name="lat" value="{{ form.get('lat','') }}" placeholder="48.8566" />
+        </div>
+        <div class="form-group">
+          <label for="lng">Longitude</label>
+          <input id="lng" type="number" step="any" name="lng" value="{{ form.get('lng','') }}" placeholder="2.3522" />
         </div>
       </div>
 
