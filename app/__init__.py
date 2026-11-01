@@ -11,7 +11,6 @@ from flask import Flask
 
 from .config import Config
 from .extensions import db
-from .kml import sync_plaque_coords
 
 # Load .env at import time so os.environ is populated before Config is read
 load_dotenv()
@@ -86,7 +85,6 @@ def create_app(config_class: type = Config) -> Flask:
         # db.create_all()
         migrate_db()
         seed_questions()
-        sync_plaque_coords()
 
     import json
 

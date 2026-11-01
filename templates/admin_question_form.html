@@ -1,298 +1,1326 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>{{ 'Modifier' if mode == 'modifier' else 'Nouvelle' }} question – Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
-  <style>
-    :root{--adm-bg:#F8FAFC;--adm-card:#FFFFFF;--adm-text:#1a1a2e;--adm-muted:#6B7280;--adm-faint:#9CA3AF;--adm-border:#E5E7EB;--adm-input-bg:#FAFAFA;--adm-header:#1e293b;--adm-shadow:rgba(0,0,0,0.08);--adm-section-bg:#F8FAFC}
-    [data-theme="dark"]{--adm-bg:#0F1020;--adm-card:#1a1a2e;--adm-text:#E5E7EB;--adm-muted:#9CA3AF;--adm-faint:#6B7280;--adm-border:#374151;--adm-input-bg:#151528;--adm-header:#0D1533;--adm-shadow:rgba(0,0,0,0.3);--adm-section-bg:#151528}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--adm-bg);color:var(--adm-text)}
-    header{background:var(--adm-header);color:white;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    header h1{font-size:1.1rem}
-    .nav-links{display:flex;gap:10px}
-    .nav-links a{color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.85rem;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2)}
-    .nav-links a:hover{background:rgba(255,255,255,0.1)}
-    main{max-width:760px;margin:28px auto;padding:0 20px 60px}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>
+      {{ 'Modifier' if mode == 'modifier' else 'Nouvelle' }} question – Admin
+    </title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Leaflet Map Library -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      (function () {
+        var t = localStorage.getItem("theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <style>
+      :root {
+        --adm-bg: #f8fafc;
+        --adm-card: #ffffff;
+        --adm-text: #1a1a2e;
+        --adm-muted: #6b7280;
+        --adm-faint: #9ca3af;
+        --adm-border: #e5e7eb;
+        --adm-input-bg: #fafafa;
+        --adm-header: #1e293b;
+        --adm-shadow: rgba(0, 0, 0, 0.08);
+        --adm-section-bg: #f8fafc;
+      }
+      [data-theme="dark"] {
+        --adm-bg: #0f1020;
+        --adm-card: #1a1a2e;
+        --adm-text: #e5e7eb;
+        --adm-muted: #9ca3af;
+        --adm-faint: #6b7280;
+        --adm-border: #374151;
+        --adm-input-bg: #151528;
+        --adm-header: #0d1533;
+        --adm-shadow: rgba(0, 0, 0, 0.3);
+        --adm-section-bg: #151528;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--adm-bg);
+        color: var(--adm-text);
+      }
+      header {
+        background: var(--adm-header);
+        color: white;
+        padding: 16px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      header h1 {
+        font-size: 1.1rem;
+      }
+      .nav-links {
+        display: flex;
+        gap: 10px;
+      }
+      .nav-links a {
+        color: rgba(255, 255, 255, 0.75);
+        text-decoration: none;
+        font-size: 0.85rem;
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .nav-links a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      main {
+        max-width: 760px;
+        margin: 28px auto;
+        padding: 0 20px 60px;
+      }
 
-    /* ── Card ── */
-    .card{background:var(--adm-card);border-radius:16px;padding:32px;box-shadow:0 2px 16px var(--adm-shadow);border-top:5px solid #002395}
-    h2{font-size:1.35rem;color:#002395;margin-bottom:5px}
-    .sous-titre{color:var(--adm-muted);font-size:0.9rem;margin-bottom:24px}
+      /* ── Card ── */
+      .card {
+        background: var(--adm-card);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 2px 16px var(--adm-shadow);
+        border-top: 5px solid #002395;
+      }
+      h2 {
+        font-size: 1.35rem;
+        color: #002395;
+        margin-bottom: 5px;
+      }
+      .sous-titre {
+        color: var(--adm-muted);
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+      }
 
-    /* ── Erreurs ── */
-    .erreurs{background:#FEF2F2;border:2px solid #FECACA;border-radius:10px;padding:14px 18px;margin-bottom:20px}
-    .erreurs p{color:#DC2626;font-size:0.87rem;margin-bottom:3px}
-    .erreurs p:last-child{margin-bottom:0}
+      /* ── Erreurs ── */
+      .erreurs {
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+      }
+      .erreurs p {
+        color: #dc2626;
+        font-size: 0.87rem;
+        margin-bottom: 3px;
+      }
+      .erreurs p:last-child {
+        margin-bottom: 0;
+      }
 
-    /* ── Form elements ── */
-    .form-group{margin-bottom:16px}
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    label{display:block;font-weight:600;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;color:#002395;margin-bottom:6px}
-    label .hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--adm-faint);font-size:0.79rem;margin-left:5px}
-    input[type=text],textarea{width:100%;padding:11px 13px;border:2px solid var(--adm-border);border-radius:10px;font-size:0.93rem;font-family:'DM Sans',sans-serif;background:var(--adm-input-bg);transition:border-color 0.2s;color:var(--adm-text)}
-    input:focus,textarea:focus{outline:none;border-color:#002395;background:var(--adm-card)}
-    textarea{resize:vertical;min-height:76px;line-height:1.5}
-    .reponse-input{border-color:#065F46 !important;background:#F0FDF4}
-    .section-sep{border:none;border-top:2px dashed var(--adm-border);margin:20px 0}
+      /* ── Form elements ── */
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #002395;
+        margin-bottom: 6px;
+      }
+      label .hint {
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: 0;
+        color: var(--adm-faint);
+        font-size: 0.79rem;
+        margin-left: 5px;
+      }
+      input[type="text"],
+      textarea {
+        width: 100%;
+        padding: 11px 13px;
+        border: 2px solid var(--adm-border);
+        border-radius: 10px;
+        font-size: 0.93rem;
+        font-family: "DM Sans", sans-serif;
+        background: var(--adm-input-bg);
+        transition: border-color 0.2s;
+        color: var(--adm-text);
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #002395;
+        background: var(--adm-card);
+      }
+      textarea {
+        resize: vertical;
+        min-height: 76px;
+        line-height: 1.5;
+      }
+      .reponse-input {
+        border-color: #065f46 !important;
+        background: #f0fdf4;
+      }
+      .section-sep {
+        border: none;
+        border-top: 2px dashed var(--adm-border);
+        margin: 20px 0;
+      }
 
-    /* ── Choix ── */
-    .choix-section{background:var(--adm-section-bg);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid var(--adm-border)}
-    .choix-section h3{font-size:0.85rem;font-weight:700;color:var(--adm-text);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.04em}
-    .choix-item{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-    .choix-item:last-child{margin-bottom:0}
-    .choix-lettre{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.82rem;flex-shrink:0;color:white}
-    .choix-item input{margin:0;flex:1}
+      /* ── Choix ── */
+      .choix-section {
+        background: var(--adm-section-bg);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid var(--adm-border);
+      }
+      .choix-section h3 {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--adm-text);
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .choix-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 9px;
+      }
+      .choix-item:last-child {
+        margin-bottom: 0;
+      }
+      .choix-lettre {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.82rem;
+        flex-shrink: 0;
+        color: white;
+      }
+      .choix-item input {
+        margin: 0;
+        flex: 1;
+      }
 
-    /* ── Lang tabs ── */
-    .lang-tabs{display:flex;gap:2px;border-bottom:2px solid var(--adm-border);margin-bottom:0}
-    .lang-tab-btn{
-      padding:9px 20px;border:none;background:none;font-family:'DM Sans',sans-serif;
-      font-size:0.88rem;font-weight:600;cursor:pointer;color:var(--adm-muted);
-      border-bottom:3px solid transparent;margin-bottom:-2px;transition:color 0.15s;
-    }
-    .lang-tab-btn.active{color:#002395;border-bottom-color:#002395}
-    .lang-tab-btn .flag{margin-right:5px}
-    .lang-panel{display:none;padding-top:20px}
-    .lang-panel.active{display:block}
-    .lang-panel-header{display:flex;align-items:center;gap:8px;margin-bottom:16px}
-    .lang-badge{background:#EEF1FF;color:#002395;padding:3px 12px;border-radius:20px;font-size:0.8rem;font-weight:700}
-    .lang-optional{color:var(--adm-faint);font-size:0.8rem}
-    .lang-required{color:#DC2626;font-size:0.8rem;font-weight:600}
+      /* ── Lang tabs ── */
+      .lang-tabs {
+        display: flex;
+        gap: 2px;
+        border-bottom: 2px solid var(--adm-border);
+        margin-bottom: 0;
+      }
+      .lang-tab-btn {
+        padding: 9px 20px;
+        border: none;
+        background: none;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--adm-muted);
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        transition: color 0.15s;
+      }
+      .lang-tab-btn.active {
+        color: #002395;
+        border-bottom-color: #002395;
+      }
+      .lang-tab-btn .flag {
+        margin-right: 5px;
+      }
+      .lang-panel {
+        display: none;
+        padding-top: 20px;
+      }
+      .lang-panel.active {
+        display: block;
+      }
+      .lang-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .lang-badge {
+        background: #eef1ff;
+        color: #002395;
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+      .lang-optional {
+        color: var(--adm-faint);
+        font-size: 0.8rem;
+      }
+      .lang-required {
+        color: #dc2626;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
 
-    /* ── Buttons ── */
-    .btn-row{display:flex;gap:12px;margin-top:24px}
-    .btn-save{background:#002395;color:white;padding:13px 26px;border-radius:10px;font-size:0.97rem;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;flex:1}
-    .btn-save:hover{background:#001a6e}
-    .btn-cancel{background:var(--adm-section-bg);color:var(--adm-text);padding:13px 18px;border-radius:10px;font-size:0.97rem;font-weight:600;text-decoration:none;text-align:center;border:2px solid var(--adm-border)}
-    .btn-cancel:hover{background:var(--adm-border)}
+      /* ── Buttons ── */
+      .btn-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      .btn-save {
+        background: #002395;
+        color: white;
+        padding: 13px 26px;
+        border-radius: 10px;
+        font-size: 0.97rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        font-family: "DM Sans", sans-serif;
+        flex: 1;
+      }
+      .btn-save:hover {
+        background: #001a6e;
+      }
+      .btn-cancel {
+        background: var(--adm-section-bg);
+        color: var(--adm-text);
+        padding: 13px 18px;
+        border-radius: 10px;
+        font-size: 0.97rem;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        border: 2px solid var(--adm-border);
+      }
+      .btn-cancel:hover {
+        background: var(--adm-border);
+      }
 
-    @media(max-width:520px){.form-row{grid-template-columns:1fr}}
-    .theme-toggle{background:none;border:1px solid rgba(255,255,255,0.3);color:white;padding:5px 10px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:'DM Sans',sans-serif;transition:background 0.15s}
-    .theme-toggle:hover{background:rgba(255,255,255,0.15)}
-  </style>
-</head>
-<body>
-<header>
-  <h1>France Seorae Admin</h1>
-  <nav class="nav-links">
-    <a href="/admin">Participants</a>
-    <a href="/admin/questions">Questions</a>
-    <a href="/admin/logout">Déconnexion</a>
-    <button class="theme-toggle" onclick="toggleAdminTheme()" id="adminThemeBtn" type="button">☀️</button>
-  </nav>
-</header>
-<main>
-  <div class="card">
-    <h2>{{ 'Modifier la question' if mode == 'modifier' else 'Nouvelle question' }}</h2>
-    {% if mode == 'modifier' %}
-    <p class="sous-titre">Modification : {{ q.rue }}</p>
-    {% else %}
-    <p class="sous-titre">Remplis les champs pour ajouter une question. Le français est obligatoire, l'anglais et le coréen sont optionnels.</p>
-    {% endif %}
+      @media (max-width: 520px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+      }
+      .theme-toggle {
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-family: "DM Sans", sans-serif;
+        transition: background 0.15s;
+      }
+      .theme-toggle:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
 
-    {% if erreurs %}
-    <div class="erreurs">{% for e in erreurs %}<p>– {{ e }}</p>{% endfor %}</div>
-    {% endif %}
+      /* ── Image Tags UI ── */
+      .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px;
+        min-height: 48px;
+        border: 2px solid var(--adm-border);
+        border-radius: 10px;
+        background: var(--adm-input-bg);
+        margin-bottom: 12px;
+      }
+      .image-tag {
+        display: inline-flex;
+        align-items: center;
+        background: #eef1ff;
+        color: #002395;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid rgba(0, 35, 149, 0.2);
+      }
+      .image-tag.pending-tag {
+        background: #f0fdf4;
+        color: #065f46;
+        border-color: rgba(6, 95, 70, 0.2);
+      }
+      .remove-tag {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.2rem;
+        margin-left: 6px;
+        cursor: pointer;
+        line-height: 1;
+        opacity: 0.7;
+        transition: opacity 0.15s;
+      }
+      .remove-tag:hover {
+        opacity: 1;
+      }
+      [data-theme="dark"] .image-tag {
+        background: rgba(0, 35, 149, 0.3);
+        color: #93a9ff;
+        border-color: rgba(147, 169, 255, 0.3);
+      }
+      [data-theme="dark"] .image-tag.pending-tag {
+        background: rgba(6, 95, 70, 0.3);
+        color: #6ee7b7;
+        border-color: rgba(110, 231, 183, 0.3);
+      }
+      .video-tag {
+        background: #f3e8ff;
+        color: #7e22ce;
+        border-color: rgba(126, 34, 206, 0.2);
+      }
+      [data-theme="dark"] .video-tag {
+        background: rgba(126, 34, 206, 0.3);
+        color: #d8b4fe;
+        border-color: rgba(216, 180, 254, 0.3);
+      }
 
-    <form method="POST">
-
-      <!-- ── Code + Rue + Lat + Lng (commun à toutes les langues) ── -->
-      <div class="form-row">
-        <div class="form-group">
-          <label>Code de la plaque <span class="hint">(ex: 1031)</span></label>
-          <input type="text" name="code" value="{{ form.get('code','') }}" placeholder="1031" maxlength="10" required />
-        </div>
-        <div class="form-group">
-          <label>Nom de rue / Personnage</label>
-          <input type="text" name="rue" value="{{ form.get('rue','') }}" placeholder="Rue Claude MONET" required />
-        </div>
-      </div>
-
-      <hr class="section-sep" />
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="lat">Latitude</label>
-          <input id="lat" type="number" step="any" name="lat" value="{{ form.get('lat','') }}" placeholder="48.8566" />
-        </div>
-        <div class="form-group">
-          <label for="lng">Longitude</label>
-          <input id="lng" type="number" step="any" name="lng" value="{{ form.get('lng','') }}" placeholder="2.3522" />
-        </div>
-      </div>
-
-      <hr class="section-sep" />
-
-      <!-- ── Onglets langues ── -->
-      <div class="lang-tabs">
-        <button type="button" class="lang-tab-btn active" onclick="switchLang('fr', this)">
-          <span class="flag">🇫🇷</span>Français <span style="color:#DC2626;font-size:0.75rem">*</span>
+      /* Drag CSS Classes */
+      .image-tag[draggable="true"] {
+        cursor: grab;
+      }
+      .image-tag[draggable="true"]:active {
+        cursor: grabbing;
+      }
+      .image-tag.dragging {
+        opacity: 0.4;
+        border: 2px dashed var(--adm-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>France Seorae Admin</h1>
+      <nav class="nav-links">
+        <a href="/admin">Participants</a>
+        <a href="/admin/questions">Questions</a>
+        <a href="/admin/logout">Déconnexion</a>
+        <button
+          class="theme-toggle"
+          onclick="toggleAdminTheme()"
+          id="adminThemeBtn"
+          type="button"
+        >
+          ☀️
         </button>
-        <button type="button" class="lang-tab-btn" onclick="switchLang('en', this)">
-          <span class="flag">🇬🇧</span>English
-        </button>
-        <button type="button" class="lang-tab-btn" onclick="switchLang('ko', this)">
-          <span class="flag">🇰🇷</span>한국어
-        </button>
+      </nav>
+    </header>
+    <main>
+      <div class="card">
+        <h2>
+          {{ 'Modifier la question' if mode == 'modifier' else 'Nouvelle
+          question' }}
+        </h2>
+        {% if mode == 'modifier' %}
+        <p class="sous-titre">Modification : {{ q.rue }}</p>
+        {% else %}
+        <p class="sous-titre">
+          Remplis les champs pour ajouter une question. Le français est
+          obligatoire, l'anglais et le coréen sont optionnels.
+        </p>
+        {% endif %} {% if erreurs %}
+        <div class="erreurs">
+          {% for e in erreurs %}
+          <p>– {{ e }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="" enctype="multipart/form-data">
+          <!-- ── Code + Rue + Lat + Lng (commun à toutes les langues) ── -->
+          <div class="form-row">
+            <div class="form-group">
+              <label
+                >Code de la plaque <span class="hint">(ex: 1031)</span></label
+              >
+              <input
+                type="text"
+                name="code"
+                value="{{ form.get('code','') }}"
+                placeholder="1031"
+                maxlength="10"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label>Nom de rue / Personnage</label>
+              <input
+                type="text"
+                name="rue"
+                value="{{ form.get('rue','') }}"
+                placeholder="Rue Claude MONET"
+                required
+              />
+            </div>
+          </div>
+
+          <hr class="section-sep" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="lat">Latitude</label>
+              <input
+                id="lat"
+                type="text"
+                inputmode="decimal"
+                name="lat"
+                value="{{ form.get('lat','') }}"
+                placeholder="48.8566"
+              />
+            </div>
+            <div class="form-group">
+              <label for="lng">Longitude</label>
+              <input
+                id="lng"
+                type="text"
+                inputmode="decimal"
+                name="lng"
+                value="{{ form.get('lng','') }}"
+                placeholder="2.3522"
+              />
+            </div>
+          </div>
+
+          <!-- INTERACTIVE MAP -->
+          <div class="form-group" style="position: relative; z-index: 1">
+            <label
+              >Carte
+              <span class="hint"
+                >(Cliquez ou glissez le marqueur pour définir les
+                coordonnées)</span
+              ></label
+            >
+            <div
+              id="map"
+              style="
+                height: 320px;
+                border-radius: 10px;
+                border: 2px solid var(--adm-border);
+                background: var(--adm-input-bg);
+              "
+            ></div>
+          </div>
+
+          <hr class="section-sep" />
+
+          <!-- Tag-based Image Manager -->
+          <div class="form-group">
+            <label>Images (existantes et à uploader)</label>
+            <div id="image-tags-container" class="tags-container"></div>
+
+            <!-- Hidden input preserves the comma-separated string for your backend -->
+            <input
+              type="hidden"
+              name="media_images"
+              id="media_images_hidden"
+              value="{{ form.get('media_images', '') }}"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Ajouter de nouvelles images</label>
+            <input
+              type="file"
+              id="upload_images_input"
+              name="upload_images"
+              class="form-control-file"
+              multiple
+              accept="image/*"
+            />
+          </div>
+
+          <!-- Tag-based Video Manager -->
+          <div class="form-group">
+            <label>Vidéos YouTube (IDs ou URLs)</label>
+            <div id="video-tags-container" class="tags-container"></div>
+
+            <input
+              type="hidden"
+              name="media_videos"
+              id="media_videos_hidden"
+              value="{{ form.get('media_videos', '') }}"
+            />
+
+            <div style="display: flex; gap: 8px">
+              <input
+                type="text"
+                id="add_video_input"
+                style="flex: 1"
+                placeholder="Coller le lien ou l'ID YouTube ici..."
+              />
+              <button
+                type="button"
+                id="btn_add_video"
+                class="btn-cancel"
+                style="padding: 11px 18px; margin: 0"
+              >
+                Ajouter
+              </button>
+            </div>
+          </div>
+
+          <!-- ── Onglets langues ── -->
+          <div class="lang-tabs">
+            <button
+              type="button"
+              class="lang-tab-btn active"
+              onclick="switchLang('fr', this)"
+            >
+              <span class="flag">🇫🇷</span>Français
+              <span style="color: #dc2626; font-size: 0.75rem">*</span>
+            </button>
+            <button
+              type="button"
+              class="lang-tab-btn"
+              onclick="switchLang('en', this)"
+            >
+              <span class="flag">🇬🇧</span>English
+            </button>
+            <button
+              type="button"
+              class="lang-tab-btn"
+              onclick="switchLang('ko', this)"
+            >
+              <span class="flag">🇰🇷</span>한국어
+            </button>
+          </div>
+
+          <!-- ══ PANEL FRANÇAIS ══ -->
+          <div class="lang-panel active" id="panel-fr">
+            <div class="lang-panel-header">
+              <span class="lang-badge">🇫🇷 Français</span>
+              <span class="lang-required">* Obligatoire</span>
+            </div>
+
+            <div class="form-group">
+              <label>Question</label>
+              <textarea
+                name="question"
+                placeholder="De quel mouvement artistique Claude Monet est-il un des fondateurs ?"
+                spellcheck="true"
+                required
+              >
+{{ form.get('question','') }}</textarea
+              >
+            </div>
+
+            <div class="choix-section">
+              <h3>Les 3 choix de réponse (Cochez la bonne réponse)</h3>
+
+              <!-- Hidden input to preserve your backend compatibility -->
+              <input
+                type="hidden"
+                name="reponse"
+                id="hidden_reponse_fr"
+                value="{{ form.get('reponse','') }}"
+              />
+
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_fr"
+                  id="radio_A_fr"
+                  value="A"
+                  title="Bonne réponse"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                  required
+                />
+                <div class="choix-lettre" style="background: #002395">A</div>
+                <input
+                  type="text"
+                  id="text_A_fr"
+                  name="choix1"
+                  value="{{ form.get('choix1','') }}"
+                  placeholder="Choix A"
+                  spellcheck="true"
+                  required
+                />
+              </div>
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_fr"
+                  id="radio_B_fr"
+                  value="B"
+                  title="Bonne réponse"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">B</div>
+                <input
+                  type="text"
+                  id="text_B_fr"
+                  name="choix2"
+                  value="{{ form.get('choix2','') }}"
+                  placeholder="Choix B"
+                  spellcheck="true"
+                  required
+                />
+              </div>
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_fr"
+                  id="radio_C_fr"
+                  value="C"
+                  title="Bonne réponse"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">C</div>
+                <input
+                  type="text"
+                  id="text_C_fr"
+                  name="choix3"
+                  value="{{ form.get('choix3','') }}"
+                  placeholder="Choix C"
+                  spellcheck="true"
+                  required
+                />
+              </div>
+            </div>
+
+            <hr class="section-sep" />
+            <div class="form-group">
+              <label>Commentaire si bonne réponse</label>
+              <textarea
+                name="commentaire_bon"
+                placeholder="Bravo ! ..."
+                spellcheck="true"
+              >
+{{ form.get('commentaire_bon','') }}</textarea
+              >
+            </div>
+            <div class="form-group">
+              <label>Commentaire si mauvaise réponse</label>
+              <textarea
+                name="commentaire_mauvais"
+                placeholder="La bonne réponse est ..."
+                spellcheck="true"
+              >
+                {{ form.get('commentaire_mauvais','') }}
+              </textarea>
+            </div>
+          </div>
+
+          <!-- ══ PANEL ENGLISH ══ -->
+          <div class="lang-panel" id="panel-en">
+            <div class="lang-panel-header">
+              <span class="lang-badge">🇬🇧 English</span>
+              <span class="lang-optional"
+                >Optional – leave blank to use French as fallback</span
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Question</label>
+              <textarea
+                name="question_en"
+                placeholder="Which artistic movement was Claude Monet one of the founders of?"
+                spellcheck="true"
+              >
+                {{ form.get('question_en','') }}
+              </textarea>
+            </div>
+
+            <div class="choix-section">
+              <h3>The 3 answer choices</h3>
+
+              <!-- Hidden input to preserve your backend compatibility -->
+              <input
+                type="hidden"
+                name="reponse"
+                id="hidden_reponse_fr"
+                value="{{ form.get('reponse','') }}"
+              />
+
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_en"
+                  id="radio_A_en"
+                  value="A"
+                  title="Correct answer"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">A</div>
+                <input
+                  type="text"
+                  id="text_A_en"
+                  name="choix1"
+                  value="{{ form.get('choix1_en','') }}"
+                  placeholder="Choice A"
+                  spellcheck="true"
+                />
+              </div>
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_en"
+                  id="radio_B_en"
+                  value="B"
+                  title="Correct answer"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">B</div>
+                <input
+                  type="text"
+                  id="text_B_en"
+                  name="choix2_en"
+                  value="{{ form.get('choix2_en','') }}"
+                  placeholder="Choice B"
+                  spellcheck="true"
+                />
+              </div>
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_en"
+                  id="radio_C_en"
+                  value="C"
+                  title="Correct answer"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">C</div>
+                <input
+                  type="text"
+                  id="text_C_en"
+                  name="choix3_en"
+                  value="{{ form.get('choix3_en','') }}"
+                  placeholder="Choice C"
+                  spellcheck="true"
+                />
+              </div>
+            </div>
+
+            <hr class="section-sep" />
+            <div class="form-group">
+              <label>Comment if correct answer</label>
+              <textarea
+                name="commentaire_bon_en"
+                placeholder="Well done! ..."
+                spellcheck="true"
+              >
+{{ form.get('commentaire_bon_en','') }}</textarea
+              >
+            </div>
+            <div class="form-group">
+              <label>Comment if wrong answer</label>
+              <textarea
+                name="commentaire_mauvais_en"
+                placeholder="The correct answer is ..."
+                spellcheck="true"
+              >
+{{ form.get('commentaire_mauvais_en','') }}</textarea
+              >
+            </div>
+          </div>
+
+          <!-- ══ PANEL KOREAN ══ -->
+          <div class="lang-panel" id="panel-ko">
+            <div class="lang-panel-header">
+              <span class="lang-badge">🇰🇷 한국어</span>
+              <span class="lang-optional"
+                >선택 사항 – 비워두면 프랑스어가 기본으로 사용됩니다</span
+              >
+            </div>
+
+            <div class="form-group">
+              <label>질문</label>
+              <textarea
+                name="question_ko"
+                placeholder="클로드 모네는 어떤 예술 운동의 창시자 중 한 명인가요?"
+                spellcheck="true"
+              >
+{{ form.get('question_ko','') }}</textarea
+              >
+            </div>
+
+            <div class="choix-section">
+              <h3>3가지 답변 선택지</h3>
+
+              <!-- Hidden input to preserve your backend compatibility -->
+              <input
+                type="hidden"
+                name="reponse"
+                id="hidden_reponse_fr"
+                value="{{ form.get('reponse','') }}"
+              />
+
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_ko"
+                  id="radio_A_ko"
+                  value="A"
+                  title="정답"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">A</div>
+                <input
+                  type="text"
+                  id="text_A_ko"
+                  name="choix1_ko"
+                  value="{{ form.get('choix1_ko','') }}"
+                  placeholder="선택지 A"
+                  spellcheck="true"
+                />
+              </div>
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_ko"
+                  id="radio_B_ko"
+                  value="B"
+                  title="정답"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">B</div>
+                <input
+                  type="text"
+                  id="text_B_ko"
+                  name="choix2_ko"
+                  value="{{ form.get('choix2_ko','') }}"
+                  placeholder="선택지 B"
+                  spellcheck="true"
+                />
+              </div>
+              <div class="choix-item">
+                <input
+                  type="radio"
+                  name="radio_ko"
+                  id="radio_C_ko"
+                  value="C"
+                  title="정답"
+                  style="width: 18px; height: 18px; cursor: pointer; flex: none"
+                />
+                <div class="choix-lettre" style="background: #002395">C</div>
+                <input
+                  type="text"
+                  id="text_C_ko"
+                  name="choix3_ko"
+                  value="{{ form.get('choix3_ko','') }}"
+                  placeholder="선택지 C"
+                  spellcheck="true"
+                />
+              </div>
+            </div>
+
+            <hr class="section-sep" />
+            <div class="form-group">
+              <label>정답일 때 코멘트</label>
+              <textarea
+                name="commentaire_bon_ko"
+                placeholder="잘했어요! ..."
+                spellcheck="true"
+              >
+{{ form.get('commentaire_bon_ko','') }}</textarea
+              >
+            </div>
+            <div class="form-group">
+              <label>오답일 때 코멘트</label>
+              <textarea
+                name="commentaire_mauvais_ko"
+                placeholder="정답은 ..."
+                spellcheck="true"
+              >
+{{ form.get('commentaire_mauvais_ko','') }}</textarea
+              >
+            </div>
+          </div>
+
+          <!-- ── Boutons ── -->
+          <div class="btn-row">
+            <a href="/admin/questions" class="btn-cancel">Annuler</a>
+            <button type="submit" class="btn-save">
+              {{ 'Enregistrer les modifications' if mode == 'modifier' else
+              'Ajouter la question' }}
+            </button>
+          </div>
+        </form>
       </div>
+    </main>
 
-      <!-- ══ PANEL FRANÇAIS ══ -->
-      <div class="lang-panel active" id="panel-fr">
-        <div class="lang-panel-header">
-          <span class="lang-badge">🇫🇷 Français</span>
-          <span class="lang-required">* Obligatoire</span>
-        </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // --- 1. SETUP: IMAGES ---
+        const imageHiddenInput = document.getElementById("media_images_hidden");
+        const fileInput = document.getElementById("upload_images_input");
+        const imageTagsContainer = document.getElementById(
+          "image-tags-container",
+        );
 
-        <div class="form-group">
-          <label>Question</label>
-          <textarea name="question" placeholder="De quel mouvement artistique Claude Monet est-il un des fondateurs ?" required>{{ form.get('question','') }}</textarea>
-        </div>
+        let existingImages = [];
+        if (imageHiddenInput && imageHiddenInput.value) {
+          existingImages = imageHiddenInput.value
+            .split(/[,\n]+/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        }
 
-        <div class="choix-section">
-          <h3>Les 3 choix de réponse</h3>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#002395">A</div>
-            <input type="text" name="choix1" value="{{ form.get('choix1','') }}" placeholder="Choix A" required />
-          </div>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#002395">B</div>
-            <input type="text" name="choix2" value="{{ form.get('choix2','') }}" placeholder="Choix B" required />
-          </div>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#002395">C</div>
-            <input type="text" name="choix3" value="{{ form.get('choix3','') }}" placeholder="Choix C" required />
-          </div>
-        </div>
+        // --- 2. SETUP: VIDEOS ---
+        const videoHiddenInput = document.getElementById("media_videos_hidden");
+        const videoTagsContainer = document.getElementById(
+          "video-tags-container",
+        );
+        const addVideoInput = document.getElementById("add_video_input");
+        const btnAddVideo = document.getElementById("btn_add_video");
 
-        <div class="form-group">
-          <label>Bonne réponse <span class="hint">(doit correspondre exactement à un choix)</span></label>
-          <input type="text" name="reponse" value="{{ form.get('reponse','') }}" placeholder="Ex: L'impressionnisme" class="reponse-input" required />
-        </div>
+        let existingVideos = [];
+        if (videoHiddenInput && videoHiddenInput.value) {
+          existingVideos = videoHiddenInput.value
+            .split(/[,\n]+/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        }
 
-        <hr class="section-sep" />
-        <div class="form-group">
-          <label>Commentaire si bonne réponse</label>
-          <textarea name="commentaire_bon" placeholder="Bravo ! ...">{{ form.get('commentaire_bon','') }}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Commentaire si mauvaise réponse</label>
-          <textarea name="commentaire_mauvais" placeholder="La bonne réponse est ...">{{ form.get('commentaire_mauvais','') }}</textarea>
-        </div>
-      </div>
+        // --- 3. RENDER FUNCTIONS ---
+        window.renderTags = function () {
+          if (!imageTagsContainer) return;
+          imageTagsContainer.innerHTML = "";
 
-      <!-- ══ PANEL ENGLISH ══ -->
-      <div class="lang-panel" id="panel-en">
-        <div class="lang-panel-header">
-          <span class="lang-badge">🇬🇧 English</span>
-          <span class="lang-optional">Optional – leave blank to use French as fallback</span>
-        </div>
+          existingImages.forEach((img, index) => {
+            const tag = document.createElement("span");
+            tag.className = "image-tag";
+            tag.draggable = true;
+            tag.dataset.value = img; // Stores exact name for drag-and-drop
+            tag.innerHTML = `${img} <button type="button" class="remove-tag" onclick="removeExisting(${index})">&times;</button>`;
+            imageTagsContainer.appendChild(tag);
+          });
 
-        <div class="form-group">
-          <label>Question</label>
-          <textarea name="question_en" placeholder="Which artistic movement was Claude Monet one of the founders of?">{{ form.get('question_en','') }}</textarea>
-        </div>
+          if (fileInput && fileInput.files) {
+            Array.from(fileInput.files).forEach((file, index) => {
+              const tag = document.createElement("span");
+              tag.className = "image-tag pending-tag";
+              // Pending uploads are not draggable until saved
+              tag.innerHTML = `📄&nbsp; ${file.name} <button type="button" class="remove-tag" onclick="removeFile(${index})">&times;</button>`;
+              imageTagsContainer.appendChild(tag);
+            });
+          }
 
-        <div class="choix-section">
-          <h3>The 3 answer choices</h3>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#1a6b3c">A</div>
-            <input type="text" name="choix1_en" value="{{ form.get('choix1_en','') }}" placeholder="Choice A" />
-          </div>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#1a6b3c">B</div>
-            <input type="text" name="choix2_en" value="{{ form.get('choix2_en','') }}" placeholder="Choice B" />
-          </div>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#1a6b3c">C</div>
-            <input type="text" name="choix3_en" value="{{ form.get('choix3_en','') }}" placeholder="Choice C" />
-          </div>
-        </div>
+          if (imageHiddenInput)
+            imageHiddenInput.value = existingImages.join(", ");
+        };
 
-        <div class="form-group">
-          <label>Correct answer <span class="hint">(must match exactly one of the 3 choices above)</span></label>
-          <input type="text" name="reponse_en" value="{{ form.get('reponse_en','') }}" placeholder="Ex: Impressionism" class="reponse-input" />
-        </div>
+        window.renderVideoTags = function () {
+          if (!videoTagsContainer) return;
+          videoTagsContainer.innerHTML = "";
 
-        <hr class="section-sep" />
-        <div class="form-group">
-          <label>Comment if correct answer</label>
-          <textarea name="commentaire_bon_en" placeholder="Well done! ...">{{ form.get('commentaire_bon_en','') }}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Comment if wrong answer</label>
-          <textarea name="commentaire_mauvais_en" placeholder="The correct answer is ...">{{ form.get('commentaire_mauvais_en','') }}</textarea>
-        </div>
-      </div>
+          existingVideos.forEach((vid, index) => {
+            const tag = document.createElement("span");
+            tag.className = "image-tag video-tag";
+            tag.draggable = true;
+            tag.dataset.value = vid;
+            tag.innerHTML = `▶️&nbsp; ${vid} <button type="button" class="remove-tag" onclick="removeVideo(${index})">&times;</button>`;
+            videoTagsContainer.appendChild(tag);
+          });
 
-      <!-- ══ PANEL KOREAN ══ -->
-      <div class="lang-panel" id="panel-ko">
-        <div class="lang-panel-header">
-          <span class="lang-badge">🇰🇷 한국어</span>
-          <span class="lang-optional">선택 사항 – 비워두면 프랑스어가 기본으로 사용됩니다</span>
-        </div>
+          if (videoHiddenInput)
+            videoHiddenInput.value = existingVideos.join(", ");
+        };
 
-        <div class="form-group">
-          <label>질문</label>
-          <textarea name="question_ko" placeholder="클로드 모네는 어떤 예술 운동의 창시자 중 한 명인가요?">{{ form.get('question_ko','') }}</textarea>
-        </div>
+        // --- 4. GLOBAL REMOVE FUNCTIONS ---
+        window.removeExisting = function (index) {
+          existingImages.splice(index, 1);
+          renderTags();
+        };
 
-        <div class="choix-section">
-          <h3>3가지 답변 선택지</h3>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#c0392b">A</div>
-            <input type="text" name="choix1_ko" value="{{ form.get('choix1_ko','') }}" placeholder="선택지 A" />
-          </div>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#c0392b">B</div>
-            <input type="text" name="choix2_ko" value="{{ form.get('choix2_ko','') }}" placeholder="선택지 B" />
-          </div>
-          <div class="choix-item">
-            <div class="choix-lettre" style="background:#c0392b">C</div>
-            <input type="text" name="choix3_ko" value="{{ form.get('choix3_ko','') }}" placeholder="선택지 C" />
-          </div>
-        </div>
+        window.removeFile = function (index) {
+          const dt = new DataTransfer();
+          const files = Array.from(fileInput.files);
+          files.splice(index, 1);
+          files.forEach((file) => dt.items.add(file));
+          fileInput.files = dt.files;
+          renderTags();
+        };
 
-        <div class="form-group">
-          <label>정답 <span class="hint">(위의 3가지 선택지 중 하나와 정확히 일치해야 합니다)</span></label>
-          <input type="text" name="reponse_ko" value="{{ form.get('reponse_ko','') }}" placeholder="예: 인상주의" class="reponse-input" />
-        </div>
+        window.removeVideo = function (index) {
+          existingVideos.splice(index, 1);
+          renderVideoTags();
+        };
 
-        <hr class="section-sep" />
-        <div class="form-group">
-          <label>정답일 때 코멘트</label>
-          <textarea name="commentaire_bon_ko" placeholder="잘했어요! ...">{{ form.get('commentaire_bon_ko','') }}</textarea>
-        </div>
-        <div class="form-group">
-          <label>오답일 때 코멘트</label>
-          <textarea name="commentaire_mauvais_ko" placeholder="정답은 ...">{{ form.get('commentaire_mauvais_ko','') }}</textarea>
-        </div>
-      </div>
+        // --- 5. ADD VIDEO & UPLOAD LISTENERS ---
+        function addVideoItem() {
+          if (!addVideoInput) return;
+          const val = addVideoInput.value.trim();
+          if (val) {
+            existingVideos.push(val);
+            addVideoInput.value = "";
+            renderVideoTags();
+          }
+        }
 
-      <!-- ── Boutons ── -->
-      <div class="btn-row">
-        <a href="/admin/questions" class="btn-cancel">Annuler</a>
-        <button type="submit" class="btn-save">
-          {{ 'Enregistrer les modifications' if mode == 'modifier' else 'Ajouter la question' }}
-        </button>
-      </div>
+        if (btnAddVideo) {
+          btnAddVideo.addEventListener("click", addVideoItem);
+        }
+        if (addVideoInput) {
+          addVideoInput.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addVideoItem();
+            }
+          });
+        }
+        if (fileInput) {
+          fileInput.addEventListener("change", renderTags);
+        }
 
-    </form>
-  </div>
-</main>
+        // --- 6. DRAG AND DROP ENGINE ---
+        function enableDragAndDrop(container, updateCallback) {
+          if (!container) return;
+          let draggedItem = null;
 
-<script>
-function switchLang(lang, btn) {
-  document.querySelectorAll('.lang-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.lang-tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + lang).classList.add('active');
-  btn.classList.add('active');
-}
-function toggleAdminTheme(){var t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);document.getElementById('adminThemeBtn').textContent=t==='dark'?'🌙':'☀️';}
-document.getElementById('adminThemeBtn').textContent=(localStorage.getItem('theme')||'light')==='dark'?'🌙':'☀️';
-</script>
-</body>
+          container.addEventListener("dragstart", function (e) {
+            const target = e.target.closest(".image-tag[data-value]");
+            if (target) {
+              draggedItem = target;
+              e.dataTransfer.effectAllowed = "move";
+              setTimeout(() => target.classList.add("dragging"), 0);
+            }
+          });
+
+          container.addEventListener("dragend", function (e) {
+            if (draggedItem) {
+              draggedItem.classList.remove("dragging");
+              draggedItem = null;
+              updateCallback();
+            }
+          });
+
+          container.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            const target = e.target.closest(".image-tag[data-value]");
+            if (target && target !== draggedItem && draggedItem) {
+              const rect = target.getBoundingClientRect();
+              const isAfter = e.clientX - rect.left > rect.width / 2;
+              container.insertBefore(
+                draggedItem,
+                isAfter ? target.nextSibling : target,
+              );
+            }
+          });
+        }
+
+        function syncImagesOrder() {
+          const tags = imageTagsContainer.querySelectorAll(
+            ".image-tag[data-value]",
+          );
+          existingImages = Array.from(tags).map((t) => t.dataset.value);
+          renderTags();
+        }
+
+        function syncVideosOrder() {
+          const tags = videoTagsContainer.querySelectorAll(
+            ".video-tag[data-value]",
+          );
+          existingVideos = Array.from(tags).map((t) => t.dataset.value);
+          renderVideoTags();
+        }
+
+        enableDragAndDrop(imageTagsContainer, syncImagesOrder);
+        enableDragAndDrop(videoTagsContainer, syncVideosOrder);
+
+        // --- 7. LIVE CHARACTER COUNTER ---
+        const defaultLimit = 1000; // Default max length if not specified
+        document.querySelectorAll("textarea").forEach((textarea) => {
+          const limit = textarea.getAttribute("maxlength") || defaultLimit;
+          if (!textarea.getAttribute("maxlength")) {
+            textarea.setAttribute("maxlength", limit);
+          }
+
+          const counter = document.createElement("small");
+          counter.className = "char-counter";
+          textarea.parentNode.insertBefore(counter, textarea.nextSibling);
+
+          const updateCount = () => {
+            const currentLength = textarea.value.length;
+            counter.textContent = `${currentLength} / ${limit}`;
+            if (currentLength >= limit * 0.9) {
+              counter.classList.add("near-limit");
+            } else {
+              counter.classList.remove("near-limit");
+            }
+          };
+
+          textarea.addEventListener("input", updateCount);
+          updateCount();
+        });
+
+        // --- 8. INITIALIZE EVERYTHING ---
+        renderTags();
+        renderVideoTags();
+
+        // --- INITIALIZE RADIO BUTTONS FOR EXISTING QUESTIONS ---
+        ["fr", "en", "ko"].forEach((lang) => {
+          const hiddenInput = document.getElementById(`hidden_reponse_${lang}`);
+          if (hiddenInput && hiddenInput.value) {
+            const savedAnswer = hiddenInput.value;
+
+            // Find the text inputs for this language
+            const textA = document.getElementById(`text_A_${lang}`);
+            const textB = document.getElementById(`text_B_${lang}`);
+            const textC = document.getElementById(`text_C_${lang}`);
+
+            // Check the radio button that matches the saved answer
+            if (textA && textA.value === savedAnswer) {
+              document.getElementById(`radio_A_${lang}`).checked = true;
+            } else if (textB && textB.value === savedAnswer) {
+              document.getElementById(`radio_B_${lang}`).checked = true;
+            } else if (textC && textC.value === savedAnswer) {
+              document.getElementById(`radio_C_${lang}`).checked = true;
+            }
+          }
+        });
+
+        // --- 9. INTERACTIVE MAP ---
+        const latInput = document.getElementById("lat");
+        const lngInput = document.getElementById("lng");
+        const mapContainer = document.getElementById("map");
+
+        if (typeof L !== "undefined" && latInput && lngInput && mapContainer) {
+          // Use existing coordinates if editing, otherwise fallback to Paris (or Seorae Village)
+          const startLat = parseFloat(latInput.value) || 48.8566;
+          const startLng = parseFloat(lngInput.value) || 2.3522;
+
+          // Initialize map
+          const map = L.map("map").setView([startLat, startLng], 16);
+
+          // Load free OpenStreetMap tiles
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap",
+          }).addTo(map);
+
+          // Create a draggable marker
+          let marker = L.marker([startLat, startLng], {
+            draggable: true,
+          }).addTo(map);
+
+          // Helper to update text inputs when marker moves
+          const updateInputs = (lat, lng) => {
+            latInput.value = lat.toFixed(6);
+            lngInput.value = lng.toFixed(6);
+          };
+
+          // 1. Update when the admin clicks anywhere on the map
+          map.on("click", function (e) {
+            marker.setLatLng(e.latlng);
+            updateInputs(e.latlng.lat, e.latlng.lng);
+          });
+
+          // 2. Update when the admin drags the marker
+          marker.on("dragend", function () {
+            const pos = marker.getLatLng();
+            updateInputs(pos.lat, pos.lng);
+          });
+
+          // 3. Move the marker if the admin manually types numbers into the inputs
+          const moveMarkerFromInputs = () => {
+            const lat = parseFloat(latInput.value);
+            const lng = parseFloat(lngInput.value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              const newPos = new L.LatLng(lat, lng);
+              marker.setLatLng(newPos);
+              map.panTo(newPos);
+            }
+          };
+
+          latInput.addEventListener("input", moveMarkerFromInputs);
+          lngInput.addEventListener("input", moveMarkerFromInputs);
+        }
+
+        // Sync radio buttons to hidden answer fields on form submit
+        document.querySelector("form").addEventListener("submit", function () {
+          ["fr", "en", "ko"].forEach((lang) => {
+            const checkedRadio = document.querySelector(
+              `input[name="radio_${lang}"]:checked`,
+            );
+            const hiddenInput = document.getElementById(
+              `hidden_reponse_${lang}`,
+            );
+            if (checkedRadio && hiddenInput) {
+              // Grab the text from the adjacent text input based on the radio value (A, B, or C)
+              const textInput = document.getElementById(
+                `text_${checkedRadio.value}_${lang}`,
+              );
+              hiddenInput.value = textInput.value;
+            }
+          });
+        });
+
+        // --- AUTO-SWITCH TABS ON VALIDATION ERROR ---
+        document.querySelectorAll("input, textarea").forEach((field) => {
+          field.addEventListener("invalid", function () {
+            // Find which language panel this field belongs to
+            const panel = this.closest(".lang-panel");
+            if (panel && !panel.classList.contains("active")) {
+              // Extract the language code (e.g., 'panel-fr' becomes 'fr')
+              const lang = panel.id.replace("panel-", "");
+
+              // Find the corresponding tab button and click it to reveal the field
+              const tabBtn = document.querySelector(
+                `.lang-tab-btn[onclick*="'${lang}'"]`,
+              );
+              if (tabBtn) {
+                switchLang(lang, tabBtn);
+              }
+            }
+          });
+        });
+      });
+
+      // --- GLOBAL THEME & LANG FUNCTIONS ---
+      function switchLang(lang, btn) {
+        document
+          .querySelectorAll(".lang-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".lang-tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("panel-" + lang).classList.add("active");
+        btn.classList.add("active");
+      }
+
+      function toggleAdminTheme() {
+        var t =
+          document.documentElement.getAttribute("data-theme") === "dark"
+            ? "light"
+            : "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        localStorage.setItem("theme", t);
+        document.getElementById("adminThemeBtn").textContent =
+          t === "dark" ? "🌙" : "☀️";
+      }
+      document.getElementById("adminThemeBtn").textContent =
+        (localStorage.getItem("theme") || "light") === "dark" ? "🌙" : "☀️";
+    </script>
+  </body>
 </html>

@@ -1,7 +1,7 @@
 """Database models."""
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from .extensions import db
 
@@ -18,6 +18,10 @@ class Question(db.Model):
 
     lat = db.Column(db.Float, nullable=True)
     lng = db.Column(db.Float, nullable=True)
+
+    # Media Fields (Store lists of URLs/IDs as JSON strings)
+    media_images = db.Column(db.Text, nullable=True)
+    media_videos = db.Column(db.Text, nullable=True)
 
     # 2. Relationship to Translations
     # cascade="all, delete-orphan" ensures translations are deleted if the question is deleted
@@ -52,17 +56,33 @@ class Question(db.Model):
             except Exception:
                 choix_list = []
 
+        # Safely parse media strings back into Python lists
+        images_list = []
+        if self.media_images:
+            try:
+                images_list = json.loads(self.media_images)
+            except Exception:
+                pass
+
+        videos_list = []
+        if self.media_videos:
+            try:
+                videos_list = json.loads(self.media_videos)
+            except Exception:
+                pass
+
         return {
             "id": self.id,
             "code": self.code,
             "rue": self.rue,
             "active": self.active,
-            # Merge translated fields
             "question": trans.question_text if trans else "",
             "choix": choix_list,
             "reponse": trans.reponse if trans else "",
             "commentaire_bon": trans.commentaire_bon if trans else "",
             "commentaire_mauvais": trans.commentaire_mauvais if trans else "",
+            "media_images": images_list,
+            "media_videos": videos_list,
         }
 
 
@@ -98,7 +118,7 @@ class Participant(db.Model):
     score = db.Column(db.Integer, default=0)
     nb_reponses = db.Column(db.Integer, default=0)
     date_debut = db.Column(
-        db.DateTime(timezone=True), default=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     termine = db.Column(db.Boolean, default=False)
 
@@ -109,5 +129,7 @@ class ReponseLog(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey("question.id"), nullable=True)
     reponse = db.Column(db.String(300))
     bonne = db.Column(db.Boolean, default=False)
-    date = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    date = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     question = db.relationship("Question", backref="logs")

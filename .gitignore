@@ -50,3 +50,6 @@ flask_session/
 
 # PythonAnywhere
 /tmp/
+
+# Data 
+images/

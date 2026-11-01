@@ -14,7 +14,6 @@ from flask import (
 
 from ..extensions import db
 from ..helpers import email_valid, init_session
-from ..kml import PLAQUE_MEDIA
 from ..models import Participant, Question
 from ..translations import SUPPORTED_LANGS, get_lang, t
 
@@ -105,14 +104,14 @@ def question():
                 code_prefill="",
             )
         deja_repondu = q.id in session["reponses_ids"]
-        media = PLAQUE_MEDIA.get(q.code, {})
+        q_dict = q.to_dict(lang)
         return render_template(
             "question.html",
-            q=q.to_dict(lang),
+            q=q_dict,
             deja_repondu=deja_repondu,
             score=session["score"],
-            media_videos=media.get("videos", []),
-            media_images=media.get("images", []),
+            media_images=q_dict.get("media_images", []),
+            media_videos=q_dict.get("media_videos", []),
         )
 
     code_prefill = request.args.get("code", "")
@@ -123,16 +122,16 @@ def question():
         except ValueError:
             code = ""
         q = Question.query.filter_by(code=code, active=True).first()
+        q_dict = q.to_dict(lang)
         if q:
             deja_repondu = q.id in session["reponses_ids"]
-            media = PLAQUE_MEDIA.get(q.code, {})
             return render_template(
                 "question.html",
-                q=q.to_dict(lang),
+                q=q_dict,
                 deja_repondu=deja_repondu,
                 score=session["score"],
-                media_videos=media.get("videos", []),
-                media_images=media.get("images", []),
+                media_images=q_dict.get("media_images", []),
+                media_videos=q_dict.get("media_videos", []),
             )
 
     return render_template(
@@ -159,7 +158,6 @@ def repondre():
         return redirect(url_for("main.carte"))
 
     q = q_obj.to_dict(lang)
-    media = PLAQUE_MEDIA.get(q_obj.code, {})
 
     if not reponse_donnee:
         return render_template(
@@ -168,8 +166,8 @@ def repondre():
             deja_repondu=False,
             score=session["score"],
             erreur=t("question_no_answer"),
-            media_videos=media.get("videos", []),
-            media_images=media.get("images", []),
+            media_images=q.get("media_images", []),
+            media_videos=q.get("media_videos", []),
         )
 
     if reponse_donnee not in q["choix"]:
@@ -179,8 +177,8 @@ def repondre():
             deja_repondu=False,
             score=session["score"],
             erreur=t("question_invalid"),
-            media_videos=media.get("videos", []),
-            media_images=media.get("images", []),
+            media_images=q.get("media_images", []),
+            media_videos=q.get("media_videos", []),
         )
 
     bonne = reponse_donnee == q["reponse"]

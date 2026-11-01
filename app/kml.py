@@ -12,12 +12,15 @@ automatically — no manual mapping is required.
 from __future__ import annotations
 
 import html
+import json
+import os
 import re
 import urllib.request
 
 from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 
+from .extensions import db
 from .models import Question
 
 # Media (images + YouTube videos) extracted from KML, indexed by code
@@ -215,34 +218,63 @@ def sync_plaque_coords() -> tuple[int, str]:
         return 0, msg
 
     new_coords = {}
-    new_media = {}
     unmatched = []
+
+    # Ensure a local directory exists for the images
+    img_dir = os.path.join(current_app.static_folder, "images", "plaques")
+    os.makedirs(img_dir, exist_ok=True)
 
     for pm in placemarks:
         code = _match_kml_name_to_question(pm["name"], questions)
         if code:
             new_coords[code] = {"lat": pm["lat"], "lng": pm["lng"]}
-            if pm["images"] or pm["videos"]:
-                new_media[code] = {
-                    "images": pm["images"],
-                    "videos": pm["videos"],
-                }
+
+            # Find the actual Question object from our list
+            q_obj = next((q for q in questions if q.code == code), None)
+            if q_obj:
+                # 1. Videos: Just save the YouTube IDs directly
+                if pm["videos"]:
+                    q_obj.media_videos = json.dumps(pm["videos"])
+
+                # 2. Images: Download them and save the local file paths
+                local_images = []
+                for idx, img_url in enumerate(pm["images"]):
+                    filename = f"{code}_{idx}.jpg"
+                    filepath = os.path.join(img_dir, filename)
+
+                    # Only download if we haven't saved it previously
+                    if not os.path.exists(filepath):
+                        try:
+                            # Add user-agent to avoid 403 Forbidden from Google
+                            req = urllib.request.Request(
+                                img_url, headers={"User-Agent": "Mozilla/5.0"}
+                            )
+                            with (
+                                urllib.request.urlopen(req, timeout=10) as response,
+                                open(filepath, "wb") as out_file,
+                            ):
+                                out_file.write(response.read())
+                        except Exception as e:
+                            print(f"[sync] Erreur de téléchargement pour {code}: {e}")
+                            continue
+
+                    local_images.append(f"images/plaques/{filename}")
+
+                if local_images:
+                    q_obj.media_images = json.dumps(local_images)
+
+                # Print log for this specific question
+                print(
+                    f"[sync] 🖼️  code={code}: {len(local_images)} image(s), {len(pm['videos'])} video(s)"
+                )
         else:
             unmatched.append(pm["name"])
 
+    # Commit all media updates to the database
+    db.session.commit()
+
     if new_coords:
         PLAQUE_COORDS.update(new_coords)
-    if new_media:
-        PLAQUE_MEDIA.update(new_media)
-
-    for code, m in new_media.items():
-        imgs = m.get("images", [])
-        vids = m.get("videos", [])
-        print(f"[sync] 🖼️  code={code}: {len(imgs)} image(s), {len(vids)} video(s)")
-        for url in imgs:
-            print(f"[sync]      img: {url[:120]}")
-        for vid in vids:
-            print(f"[sync]      vid: {vid}")
 
     if unmatched:
         print(f"[sync] ⚠️  Non matchés : {', '.join(unmatched)}")

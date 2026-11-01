@@ -1,10 +1,10 @@
-{% extends "base.html" %}
-{% block score_header %}{{ score }} {{ t('score_pts') }}{% endblock %}
-
-{% block extra_head %}
+{% extends "base.html" %} {% block score_header %}{{ score }} {{ t('score_pts')
+}}{% endblock %} {% block extra_head %}
 <style>
   /* ── Media carousel: one item at a time ── */
-  .media-section { margin-top: 18px; }
+  .media-section {
+    margin-top: 18px;
+  }
   .media-section-title {
     font-size: 0.82rem;
     font-weight: 700;
@@ -14,13 +14,15 @@
     margin-bottom: 10px;
   }
 
-  .carousel-wrapper { position: relative; }
+  .carousel-wrapper {
+    position: relative;
+  }
 
   .carousel-track {
     display: flex;
     overflow: hidden;
     border-radius: 14px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.16);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.16);
   }
 
   .media-slide {
@@ -35,7 +37,8 @@
     justify-content: center;
   }
   .media-slide img {
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 100%;
     max-height: 400px;
     object-fit: contain;
     display: block;
@@ -44,22 +47,30 @@
 
   /* Video play overlay */
   .play-overlay {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.22);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.22);
     transition: background 0.2s;
     cursor: pointer;
   }
-  .media-slide:hover .play-overlay { background: rgba(0,0,0,0.36); }
+  .media-slide:hover .play-overlay {
+    background: rgba(0, 0, 0, 0.36);
+  }
   .play-btn {
-    width: 56px; height: 56px;
-    background: rgba(255,255,255,0.95);
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 3px 16px rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35);
   }
   .play-btn::after {
-    content: '';
+    content: "";
     display: block;
     border-style: solid;
     border-width: 11px 0 11px 18px;
@@ -72,21 +83,25 @@
     background: #000;
   }
   .media-slide iframe {
-    width: 100%; height: 100%;
-    border: 0; display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
   }
 
   /* Image zoom badge */
   .zoom-badge {
-    position: absolute; bottom: 10px; right: 10px;
-    background: rgba(255,255,255,0.88);
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.88);
     border-radius: 8px;
     padding: 4px 9px;
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--bleu);
     pointer-events: none;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
   }
 
   /* Arrow buttons */
@@ -95,24 +110,35 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 5;
-    width: 38px; height: 38px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     border: none;
-    background: rgba(255,255,255,0.92);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     cursor: pointer;
     display: none;
-    align-items: center; justify-content: center;
+    align-items: center;
+    justify-content: center;
     font-size: 1.2rem;
     color: var(--bleu);
     font-weight: 700;
     transition: background 0.15s;
-    font-family: 'DM Sans', sans-serif;
+    font-family: "DM Sans", sans-serif;
   }
-  .carousel-arrow.visible { display: flex; }
-  .carousel-arrow:hover { background: var(--bleu); color: #FFFFFF; }
-  .carousel-arrow--left  { left: 8px; }
-  .carousel-arrow--right { right: 8px; }
+  .carousel-arrow.visible {
+    display: flex;
+  }
+  .carousel-arrow:hover {
+    background: var(--bleu);
+    color: #ffffff;
+  }
+  .carousel-arrow--left {
+    left: 8px;
+  }
+  .carousel-arrow--right {
+    right: 8px;
+  }
 
   /* Counter badge */
   .carousel-counter {
@@ -132,10 +158,13 @@
     margin-top: 10px;
   }
   .carousel-dot {
-    width: 8px; height: 8px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--border-light);
-    transition: background 0.2s, transform 0.2s;
+    transition:
+      background 0.2s,
+      transform 0.2s;
     cursor: pointer;
     border: none;
     padding: 0;
@@ -147,36 +176,63 @@
 
   /* Lightbox */
   .lightbox {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.88); z-index: 9999;
-    align-items: center; justify-content: center;
-    padding: 20px; cursor: pointer;
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    cursor: pointer;
   }
-  .lightbox.open { display: flex; }
+  .lightbox.open {
+    display: flex;
+  }
   .lightbox img {
-    max-width: 95%; max-height: 90vh;
-    border-radius: 12px; object-fit: contain;
+    max-width: 95%;
+    max-height: 90vh;
+    border-radius: 12px;
+    object-fit: contain;
   }
 </style>
-{% endblock %}
-
-{% block content %}
-
-{% if deja_repondu %}
-<div class="alerte-warning">
-  {{ t('question_already') }}
-</div>
+{% endblock %} {% block content %} {% if deja_repondu %}
+<div class="alerte-warning">{{ t('question_already') }}</div>
 <a href="/carte" class="btn btn-primary">{{ t('back_map') }}</a>
 
 {% else %}
 
 <div class="rue-tag">📍 {{ q.rue }}</div>
 <div class="card">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-    <span style="font-size:0.78rem; color:var(--gris); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">
+  <div
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    "
+  >
+    <span
+      style="
+        font-size: 0.78rem;
+        color: var(--gris);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      "
+    >
       #{{ q.id }}
     </span>
-    <span style="font-size:0.78rem; background:var(--bleu); color:white; padding:3px 11px; border-radius:20px; font-weight:600;">
+    <span
+      style="
+        font-size: 0.78rem;
+        background: var(--bleu);
+        color: white;
+        padding: 3px 11px;
+        border-radius: 20px;
+        font-weight: 600;
+      "
+    >
       {{ t('question_point') }}
     </span>
   </div>
@@ -185,7 +241,9 @@
   <div class="alerte">{{ erreur }}</div>
   {% endif %}
 
-  <h2 style="margin-bottom:22px; font-size:1.2rem; line-height:1.4;">{{ q.question }}</h2>
+  <h2 style="margin-bottom: 22px; font-size: 1.2rem; line-height: 1.4">
+    {{ q.question }}
+  </h2>
 
   <form method="POST" action="/repondre" id="quiz-form">
     <input type="hidden" name="question_id" value="{{ q.id }}" />
@@ -201,7 +259,10 @@
           class="choix-btn"
           onclick="this.classList.add('selected')"
         >
-          <span style="margin-right:8px; opacity:0.5;">{% if loop.index == 1 %}🅐{% elif loop.index == 2 %}🅑{% else %}🅒{% endif %}</span>
+          <span style="margin-right: 8px; opacity: 0.5"
+            >{% if loop.index == 1 %}🅐{% elif loop.index == 2 %}🅑{% else %}🅒{%
+            endif %}</span
+          >
           {{ choix }}
         </button>
       </li>
@@ -215,20 +276,42 @@
   <div class="media-section-title">{{ t('question_media') }}</div>
 
   <div class="carousel-wrapper" id="carouselWrap">
-    <button class="carousel-arrow carousel-arrow--left" id="arrowLeft" aria-label="Previous" type="button">&#8249;</button>
-    <button class="carousel-arrow carousel-arrow--right" id="arrowRight" aria-label="Next" type="button">&#8250;</button>
+    <button
+      class="carousel-arrow carousel-arrow--left"
+      id="arrowLeft"
+      aria-label="Previous"
+      type="button"
+    >
+      &#8249;
+    </button>
+    <button
+      class="carousel-arrow carousel-arrow--right"
+      id="arrowRight"
+      aria-label="Next"
+      type="button"
+    >
+      &#8250;
+    </button>
 
     <div class="carousel-track" id="carouselTrack">
       {% for vid in media_videos %}
       <div class="media-slide" data-type="video" data-vid="{{ vid }}">
-        <img src="https://img.youtube.com/vi/{{ vid }}/hqdefault.jpg" alt="" loading="lazy" referrerpolicy="no-referrer" />
+        <img
+          src="https://img.youtube.com/vi/{{ vid }}/hqdefault.jpg"
+          alt=""
+          loading="lazy"
+          referrerpolicy="no-referrer"
+        />
         <div class="play-overlay"><div class="play-btn"></div></div>
       </div>
-      {% endfor %}
-
-      {% for img in media_images %}
+      {% endfor %} {% for img in media_images %}
       <div class="media-slide" data-type="image">
-        <img src="{{ proxy_img(img) }}" alt="{{ q.rue }}" loading="lazy" />
+        <img
+          src="{{ url_for('static', filename='images/plaques/' ~ img) }}"
+          class="d-block w-100"
+          decoding="async"
+          alt="Image plaque"
+        />
         <div class="zoom-badge">🔍</div>
       </div>
       {% endfor %}
@@ -244,99 +327,114 @@
 </div>
 
 <script>
-(function() {
-  var track   = document.getElementById('carouselTrack');
-  var arrowL  = document.getElementById('arrowLeft');
-  var arrowR  = document.getElementById('arrowRight');
-  var dotsBox = document.getElementById('carouselDots');
-  var slides  = track.querySelectorAll('.media-slide');
-  var total   = slides.length;
-  var current = 0;
+  (function () {
+    var track = document.getElementById("carouselTrack");
+    var arrowL = document.getElementById("arrowLeft");
+    var arrowR = document.getElementById("arrowRight");
+    var dotsBox = document.getElementById("carouselDots");
+    var slides = track.querySelectorAll(".media-slide");
+    var total = slides.length;
+    var current = 0;
 
-  /* Build dots */
-  for (var i = 0; i < total; i++) {
-    var d = document.createElement('button');
-    d.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-    d.setAttribute('aria-label', 'Slide ' + (i + 1));
-    d.setAttribute('type', 'button');
-    d.dataset.idx = i;
-    d.addEventListener('click', function() { goTo(parseInt(this.dataset.idx)); });
-    dotsBox.appendChild(d);
-  }
-  var allDots = dotsBox.querySelectorAll('.carousel-dot');
-
-  function goTo(idx) {
-    if (idx < 0) idx = 0;
-    if (idx >= total) idx = total - 1;
-    current = idx;
-    slides.forEach(function(s, i) {
-      s.style.transform = 'translateX(' + (-current * 100) + '%)';
-    });
-    /* Update arrows */
-    arrowL.classList.toggle('visible', current > 0);
-    arrowR.classList.toggle('visible', current < total - 1);
-    /* Update dots */
-    allDots.forEach(function(dot, j) {
-      dot.classList.toggle('active', j === current);
-    });
-  }
-
-  /* Initial state */
-  goTo(0);
-
-  arrowL.addEventListener('click', function() { goTo(current - 1); });
-  arrowR.addEventListener('click', function() { goTo(current + 1); });
-
-  /* Touch swipe support */
-  var startX = 0, startY = 0, dragging = false;
-  track.addEventListener('touchstart', function(e) {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    dragging = true;
-  }, { passive: true });
-  track.addEventListener('touchend', function(e) {
-    if (!dragging) return;
-    dragging = false;
-    var dx = e.changedTouches[0].clientX - startX;
-    var dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx < 0) goTo(current + 1);
-      else goTo(current - 1);
+    /* Build dots */
+    for (var i = 0; i < total; i++) {
+      var d = document.createElement("button");
+      d.className = "carousel-dot" + (i === 0 ? " active" : "");
+      d.setAttribute("aria-label", "Slide " + (i + 1));
+      d.setAttribute("type", "button");
+      d.dataset.idx = i;
+      d.addEventListener("click", function () {
+        goTo(parseInt(this.dataset.idx));
+      });
+      dotsBox.appendChild(d);
     }
-  }, { passive: true });
+    var allDots = dotsBox.querySelectorAll(".carousel-dot");
 
-  /* Slide click handlers */
-  slides.forEach(function(slide) {
-    slide.addEventListener('click', function(e) {
-      var type = slide.getAttribute('data-type');
-      if (type === 'video') {
-        var vid = slide.getAttribute('data-vid');
-        if (!vid || slide.dataset.loaded === '1') return;
-        slide.dataset.loaded = '1';
-        slide.innerHTML = '<iframe src="https://www.youtube.com/embed/' +
-          encodeURIComponent(vid) +
-          '?autoplay=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
-      } else if (type === 'image') {
-        var img = slide.querySelector('img');
-        if (img) openLightbox(img.src);
-      }
+    function goTo(idx) {
+      if (idx < 0) idx = 0;
+      if (idx >= total) idx = total - 1;
+      current = idx;
+      slides.forEach(function (s, i) {
+        s.style.transform = "translateX(" + -current * 100 + "%)";
+      });
+      /* Update arrows */
+      arrowL.classList.toggle("visible", current > 0);
+      arrowR.classList.toggle("visible", current < total - 1);
+      /* Update dots */
+      allDots.forEach(function (dot, j) {
+        dot.classList.toggle("active", j === current);
+      });
+    }
+
+    /* Initial state */
+    goTo(0);
+
+    arrowL.addEventListener("click", function () {
+      goTo(current - 1);
     });
-  });
-})();
+    arrowR.addEventListener("click", function () {
+      goTo(current + 1);
+    });
 
-function openLightbox(src) {
-  document.getElementById('lightbox-img').src = src;
-  document.getElementById('lightbox').classList.add('open');
-}
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('open');
-}
+    /* Touch swipe support */
+    var startX = 0,
+      startY = 0,
+      dragging = false;
+    track.addEventListener(
+      "touchstart",
+      function (e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        dragging = true;
+      },
+      { passive: true },
+    );
+    track.addEventListener(
+      "touchend",
+      function (e) {
+        if (!dragging) return;
+        dragging = false;
+        var dx = e.changedTouches[0].clientX - startX;
+        var dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0) goTo(current + 1);
+          else goTo(current - 1);
+        }
+      },
+      { passive: true },
+    );
+
+    /* Slide click handlers */
+    slides.forEach(function (slide) {
+      slide.addEventListener("click", function (e) {
+        var type = slide.getAttribute("data-type");
+        if (type === "video") {
+          var vid = slide.getAttribute("data-vid");
+          if (!vid || slide.dataset.loaded === "1") return;
+          slide.dataset.loaded = "1";
+          slide.innerHTML =
+            '<iframe src="https://www.youtube.com/embed/' +
+            encodeURIComponent(vid) +
+            '?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"; ></iframe>';
+        } else if (type === "image") {
+          var img = slide.querySelector("img");
+          if (img) openLightbox(img.src);
+        }
+      });
+    });
+  })();
+
+  function openLightbox(src) {
+    document.getElementById("lightbox-img").src = src;
+    document.getElementById("lightbox").classList.add("open");
+  }
+  function closeLightbox() {
+    document.getElementById("lightbox").classList.remove("open");
+  }
 </script>
 {% endif %}
 
-<div style="margin-top:12px;">
+<div style="margin-top: 12px">
   <a href="/carte" class="btn btn-secondary">{{ t('back_map') }}</a>
 </div>
-{% endif %}
-
-{% endblock %}
+{% endif %} {% endblock %}

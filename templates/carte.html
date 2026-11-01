@@ -1,84 +1,202 @@
-{% extends "base.html" %}
-{% block score_header %}{{ score }} {{ t('score_pts') }} · {{ nb_repondu }}/{{ total }}{% endblock %}
+{% extends "base.html" %} {% block score_header %}{{ score }} {{ t('score_pts')
+}} · {{ nb_repondu }}/{{ total }}{% endblock %} {% block extra_head %}
+<!-- Leaflet CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
 
-{% block extra_head %}
 <style>
   .map-container {
-    border-radius: 16px; overflow: hidden;
+    border-radius: 16px;
+    overflow: hidden;
     box-shadow: 0 4px 24px var(--ombre);
     border: 3px solid var(--bleu);
-    margin-bottom: 18px; position: relative;
+    margin-bottom: 18px;
+    position: relative;
+    /* Ensure map container is isolated for z-index */
+    isolation: isolate;
   }
-  #map { width: 100%; height: 430px; display: block; background: var(--border-light); }
+
+  /* Reset leaflet default background to match theme */
+  #map {
+    width: 100%;
+    height: 430px;
+    display: block;
+    background: var(--bg-surface);
+    z-index: 1;
+  }
 
   /* GPS pill */
   #gps-status {
-    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-    background: var(--blanc); border-radius: 20px;
-    padding: 5px 13px; font-size: 0.77rem; font-weight: 600; color: var(--text-secondary);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-    display: flex; align-items: center; gap: 6px; z-index: 10; white-space: nowrap;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--blanc);
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-size: 0.77rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1000;
+    white-space: nowrap;
   }
-  #gps-dot { width: 8px; height: 8px; border-radius: 50%; background: #9CA3AF; flex-shrink: 0; }
-  #gps-dot.searching { background: #F59E0B; animation: gpsPulse 1.2s infinite; }
-  #gps-dot.found     { background: #10B981; }
-  #gps-dot.error     { background: #EF4444; }
+  #gps-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9ca3af;
+    flex-shrink: 0;
+  }
+  #gps-dot.searching {
+    background: #f59e0b;
+    animation: gpsPulse 1.2s infinite;
+  }
+  #gps-dot.found {
+    background: #10b981;
+  }
+  #gps-dot.error {
+    background: #ef4444;
+  }
   @keyframes gpsPulse {
-    0%,100% { opacity:1; transform:scale(1); }
-    50%      { opacity:0.5; transform:scale(1.5); }
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.5);
+    }
   }
 
   #btn-center {
-    position: absolute; bottom: 14px; left: 14px;
-    background: var(--blanc); border: 2px solid var(--bleu); color: var(--bleu);
-    border-radius: 10px; padding: 7px 13px; font-size: 0.8rem; font-weight: 700;
-    cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.12);
-    z-index: 10; display: none; font-family: 'DM Sans', sans-serif;
-    transition: background 0.2s, color 0.2s;
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background: var(--blanc);
+    border: 2px solid var(--bleu);
+    color: var(--bleu);
+    border-radius: 10px;
+    padding: 7px 13px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    display: none;
+    font-family: "DM Sans", sans-serif;
+    transition:
+      background 0.2s,
+      color 0.2s;
   }
-  #btn-center:hover { background: var(--bleu); color: #FFFFFF; }
+  #btn-center:hover {
+    background: var(--bleu);
+    color: #ffffff;
+  }
 
-  .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
-  @media(max-width:400px){ .action-grid { grid-template-columns: 1fr; } }
+  /* InfoWindow custom styling override for Leaflet */
+  .leaflet-popup-content {
+    margin: 10px;
+    font-family: "DM Sans", sans-serif;
+  }
+  .iw-content {
+    min-width: 170px;
+  }
+  .iw-rue {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .iw-hint {
+    font-size: 0.82rem;
+    color: var(--gris);
+    line-height: 1.4;
+  }
+
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  @media (max-width: 400px) {
+    .action-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 
   .stat-row {
-    display: flex; justify-content: space-between; align-items: center;
-    background: var(--bg-surface); border-radius: 12px; padding: 13px 16px; margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-surface);
+    border-radius: 12px;
+    padding: 13px 16px;
+    margin-bottom: 10px;
   }
-  .stat-label { color: var(--gris); font-size: 0.88rem; }
-  .stat-val   { font-weight: 700; font-size: 1.08rem; color: var(--bleu); }
+  .stat-label {
+    color: var(--gris);
+    font-size: 0.88rem;
+  }
+  .stat-val {
+    font-weight: 700;
+    font-size: 1.08rem;
+    color: var(--bleu);
+  }
 
-  /* InfoWindow custom styling */
-  .iw-content { font-family: 'DM Sans', sans-serif; padding: 4px 2px; min-width: 170px; }
-  .iw-rue  { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 6px; }
-  .iw-hint { font-size: 0.82rem; color: var(--gris); line-height: 1.4; }
+  /* User Marker Animation */
+  .user-marker-pulse {
+    background-color: #4285f4;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.3);
+  }
+
+  /* Leaflet Dark Mode Filter */
+  [data-theme="dark"] .leaflet-layer {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  }
 </style>
-{% endblock %}
-
-{% block content %}
-<h2 style="margin-bottom:6px;">{{ t('map_title') }}</h2>
-<p class="subtitle" style="margin-bottom:18px;">{{ t('map_subtitle') }}</p>
+{% endblock %} {% block content %}
+<h2 style="margin-bottom: 6px">{{ t('map_title') }}</h2>
+<p class="subtitle" style="margin-bottom: 18px">{{ t('map_subtitle') }}</p>
 
 <!-- Barre de progression -->
 <div class="progress-bar">
-  <div class="progress-fill" style="width: {{ (nb_repondu / total * 100)|int if total > 0 else 0 }}%"></div>
+  <div
+    class="progress-fill"
+    style="width: {{ (nb_repondu / total * 100)|int if total > 0 else 0 }}%"
+  ></div>
 </div>
-<div class="progress-label">{{ nb_repondu }} / {{ total }} {{ t('map_progress') }}</div>
+<div class="progress-label">
+  {{ nb_repondu }} / {{ total }} {{ t('map_progress') }}
+</div>
 
 <div class="divider">🗺️</div>
 
-<!-- Carte Google Maps -->
+<!-- Carte Leaflet -->
 <div class="map-container">
   <div id="gps-status">
     <div id="gps-dot" class="searching"></div>
     <span id="gps-label">{{ t('gps_searching') }}</span>
   </div>
   <div id="map"></div>
-  <button id="btn-center" onclick="centerOnUser()">{{ t('btn_recenter') }}</button>
+  <button id="btn-center" onclick="centerOnUser()">
+    {{ t('btn_recenter') }}
+  </button>
 </div>
 
 <!-- Stats -->
-<div class="card" style="margin-bottom:14px; border-top-color: var(--or);">
+<div class="card" style="margin-bottom: 14px; border-top-color: var(--or)">
   <div class="stat-row">
     <span class="stat-label">{{ t('map_score_label') }}</span>
     <span class="stat-val">{{ score }} {{ t('score_pts') }}</span>
@@ -87,28 +205,44 @@
     <span class="stat-label">{{ t('map_answered_label') }}</span>
     <span class="stat-val">{{ nb_repondu }} / {{ total }}</span>
   </div>
-  <div class="stat-row" style="margin-bottom:0">
+  <div class="stat-row" style="margin-bottom: 0">
     <span class="stat-label">🔍 {{ t('map_remaining') }}</span>
-    <span class="stat-val" style="color:var(--rouge);">{{ total - nb_repondu }}</span>
+    <span class="stat-val" style="color: var(--rouge)"
+      >{{ total - nb_repondu }}</span
+    >
   </div>
 </div>
 
 <!-- Actions -->
 <div class="action-grid">
-  <a href="/question" class="btn btn-primary" style="font-size:0.93rem;">{{ t('map_enter_code') }}</a>
-  <a href="/enregistrer" class="btn btn-or" style="font-size:0.93rem;">{{ t('map_finish') }}</a>
+  <a href="/question" class="btn btn-primary" style="font-size: 0.93rem"
+    >{{ t('map_enter_code') }}</a
+  >
+  <a href="/enregistrer" class="btn btn-or" style="font-size: 0.93rem"
+    >{{ t('map_finish') }}</a
+  >
 </div>
 
-<div style="text-align:center; margin-top:18px; color:var(--gris); font-size:0.81rem;">
+<div
+  style="
+    text-align: center;
+    margin-top: 18px;
+    color: var(--gris);
+    font-size: 0.81rem;
+  "
+>
   💡 {{ t('map_hint') }}
 </div>
 
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
   // ── Configuration ──
-  var SEORAE       = { lat: 37.4966, lng: 126.9990 };
+  var SEORAE       = [37.4966, 126.9990]; // Leaflet uses [lat, lng] array
   var DEFAULT_ZOOM = 16;
 
-  // Questions data from Flask (rue + approximate position — NO codes sent to client)
+  // Questions data from Flask
   var QUESTIONS_DATA = {{ questions_map_data | tojson }};
 
   // Translations
@@ -121,59 +255,58 @@
   var T_GPS_UNSUPPORT = {{ t('gps_unsupported') | tojson }};
   var T_MARKER_HINT   = {{ t('map_marker_hint') | tojson }};
 
-  var map, userMarker, accuracyCircle, openInfoWindow = null;
+  var map, userMarker, accuracyCircle;
+  var isFollowing = false; // New tracking state
 
   function initMap() {
-    map = new google.maps.Map(document.getElementById('map'), {
+    // Initialize map
+    map = L.map('map', {
       center: SEORAE,
       zoom: DEFAULT_ZOOM,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: true,
-      zoomControl: true,
-      styles: [
-        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
-      ]
+      zoomControl: false
     });
 
-    // Close open InfoWindow when clicking map background
-    map.addListener('click', function() {
-      if (openInfoWindow) { openInfoWindow.close(); openInfoWindow = null; }
+    // Break "Follow" mode if the user drags or zooms the map manually
+    map.on('dragstart zoomstart', function() {
+      isFollowing = false;
+      document.getElementById('btn-center').style.background = 'var(--blanc)';
+      document.getElementById('btn-center').style.color = 'var(--bleu)';
     });
 
-    // Add markers — showing street name ONLY, no codes
-    QUESTIONS_DATA.forEach(function(q, idx) {
-      var marker = new google.maps.Marker({
-        position: { lat: q.lat, lng: q.lng },
-        map: map,
-        title: q.rue,
-        icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">' +
-            '<path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24S32 28 32 16C32 7.16 24.84 0 16 0z" fill="#002395"/>' +
-            '<circle cx="16" cy="16" r="9" fill="white"/>' +
-            '<text x="16" y="20" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="10" fill="#002395">' + (idx + 1) + '</text>' +
-            '</svg>'
-          ),
-          scaledSize: new google.maps.Size(32, 40),
-          anchor: new google.maps.Point(16, 40),
-        },
-        zIndex: 100,
+    // Add zoom control to top-left, slightly pushed down by the GPS pill
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+
+    // Load OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Custom SVG Icon for question markers
+    function createCustomIcon(index) {
+      return L.divIcon({
+        className: 'custom-pin',
+        html: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+                 <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24S32 28 32 16C32 7.16 24.84 0 16 0z" fill="#002395"/>
+                 <circle cx="16" cy="16" r="9" fill="white"/>
+                 <text x="16" y="20" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="10" fill="#002395">${index}</text>
+               </svg>`,
+        iconSize: [32, 40],
+        iconAnchor: [16, 40],
+        popupAnchor: [0, -38]
       });
+    }
 
-      // InfoWindow shows ONLY the street name + hint to find the plaque
+    // Add question markers
+    QUESTIONS_DATA.forEach(function(q, idx) {
       var infoContent = '<div class="iw-content">' +
         '<div class="iw-rue">\uD83D\uDCCD ' + q.rue + '</div>' +
         '<div class="iw-hint">' + T_MARKER_HINT + '</div>' +
         '</div>';
 
-      var infoWindow = new google.maps.InfoWindow({ content: infoContent, maxWidth: 240 });
-
-      marker.addListener('click', function() {
-        if (openInfoWindow) openInfoWindow.close();
-        infoWindow.open(map, marker);
-        openInfoWindow = infoWindow;
-      });
+      L.marker([q.lat, q.lng], { icon: createCustomIcon(idx + 1) })
+        .addTo(map)
+        .bindPopup(infoContent);
     });
 
     startGeolocation();
@@ -190,38 +323,44 @@
   }
 
   function onPositionSuccess(pos) {
-    var lat    = pos.coords.latitude;
-    var lng    = pos.coords.longitude;
-    var acc    = Math.round(pos.coords.accuracy);
-    var latlng = new google.maps.LatLng(lat, lng);
+    var lat = pos.coords.latitude;
+    var lng = pos.coords.longitude;
+    var acc = Math.round(pos.coords.accuracy);
+    var latlng = [lat, lng];
 
     setGpsStatus('found', T_GPS_PRECISION + acc + T_GPS_METERS);
     document.getElementById('btn-center').style.display = 'block';
 
+    // Create the blue user dot if it doesn't exist
     if (!userMarker) {
-      userMarker = new google.maps.Marker({
-        position: latlng, map: map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE, scale: 10,
-          fillColor: '#4285F4', fillOpacity: 1,
-          strokeColor: '#ffffff', strokeWeight: 3,
-        },
-        title: 'Vous \u00eates ici', zIndex: 999,
+      var userIcon = L.divIcon({
+        className: 'user-marker-pulse',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
       });
+      userMarker = L.marker(latlng, { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
       map.panTo(latlng);
     } else {
-      userMarker.setPosition(latlng);
+      userMarker.setLatLng(latlng);
     }
 
+    // Update the light blue accuracy circle
     if (!accuracyCircle) {
-      accuracyCircle = new google.maps.Circle({
-        map: map, center: latlng, radius: pos.coords.accuracy,
-        strokeColor: '#4285F4', strokeOpacity: 0.3, strokeWeight: 1,
-        fillColor: '#4285F4', fillOpacity: 0.07,
-      });
+      accuracyCircle = L.circle(latlng, {
+        radius: acc,
+        color: '#4285F4',
+        weight: 1,
+        fillColor: '#4285F4',
+        fillOpacity: 0.15
+      }).addTo(map);
     } else {
-      accuracyCircle.setCenter(latlng);
-      accuracyCircle.setRadius(pos.coords.accuracy);
+      accuracyCircle.setLatLng(latlng);
+      accuracyCircle.setRadius(acc);
+    }
+
+    // Auto-pan if "Follow Me" is active
+    if (isFollowing) {
+      map.panTo(latlng);
     }
   }
 
@@ -231,17 +370,22 @@
   }
 
   function centerOnUser() {
-    if (userMarker) { map.panTo(userMarker.getPosition()); map.setZoom(DEFAULT_ZOOM); }
+    if (userMarker) {
+      isFollowing = true; // Activate follow mode
+      map.flyTo(userMarker.getLatLng(), DEFAULT_ZOOM);
+
+      // Visually press the button
+      document.getElementById('btn-center').style.background = 'var(--bleu)';
+      document.getElementById('btn-center').style.color = '#FFFFFF';
+    }
   }
 
   function setGpsStatus(state, text) {
     document.getElementById('gps-dot').className = state;
     document.getElementById('gps-label').textContent = text;
   }
-</script>
 
-<script
-  src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initMap&loading=async"
-  async defer>
+  // Initialize the Leaflet map when the DOM is fully loaded
+  document.addEventListener('DOMContentLoaded', initMap);
 </script>
 {% endblock %}

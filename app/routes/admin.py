@@ -1,6 +1,7 @@
 """Admin routes: dashboard, questions CRUD, logs, sync."""
 
 import json
+import os
 import re
 from collections import defaultdict
 
@@ -15,6 +16,7 @@ from flask import (
     session,
     url_for,
 )
+from PIL import Image
 
 from ..extensions import db
 from ..helpers import admin_required
@@ -70,7 +72,7 @@ def admin_questions():
     return render_template("admin_questions.html", questions=questions)
 
 
-def _parse_question_form(form):
+def _parse_question_form(form, files=None):
     """Parse and validate multilingual question form fields into a relational structure."""
     code = form.get("code", "").strip()
     rue = form.get("rue", "").strip()
@@ -80,6 +82,74 @@ def _parse_question_form(form):
     lng_str = form.get("lng", "").strip()
     lat = float(lat_str) if lat_str else None
     lng = float(lng_str) if lng_str else None
+
+    # Extract media fields
+    media_images_raw = form.get("media_images", "").strip()
+    media_videos_raw = form.get("media_videos", "").strip()
+
+    # Split by comma or newline, remove empty spaces
+    img_list = [u.strip() for u in re.split(r"[,\n]", media_images_raw) if u.strip()]
+
+    # Smart extraction for YouTube IDs
+    raw_vids = [v.strip() for v in re.split(r"[,\n]", media_videos_raw) if v.strip()]
+    vid_list = []
+    for v in raw_vids:
+        # Look for standard YouTube URL patterns
+        match = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([a-zA-Z0-9_-]{11})", v)
+        if match:
+            vid_list.append(match.group(1))
+        # If it is already exactly an 11-character ID, accept it as-is
+        elif re.fullmatch(r"[a-zA-Z0-9_-]{11}", v):
+            vid_list.append(v)
+
+    # Handle new file uploads
+    if files:
+        upload_images = files.getlist("upload_images")
+        img_dir = os.path.join(current_app.static_folder, "images", "plaques")
+        os.makedirs(img_dir, exist_ok=True)
+
+        # 1. Determine the highest existing iterator for this question code
+        max_iterator = -1
+        prefix = f"{code}_"
+        for img in img_list:
+            if img.startswith(prefix):
+                try:
+                    # Extract the number between the prefix and the file extension (e.g., "1876_2.jpg" -> 2)
+                    num_str = img[len(prefix) :].rsplit(".", 1)[0]
+                    max_iterator = max(max_iterator, int(num_str))
+                except ValueError:
+                    pass
+
+        next_iterator = max_iterator + 1
+
+        # 2. Save new files with the enforced naming convention and resize
+        for f in upload_images:
+            if f and f.filename:
+                # Force extension to .jpg since we are converting everything to JPEG
+                ext = ".jpg"
+                new_filename = f"{code}_{next_iterator}{ext}"
+                filepath = os.path.join(img_dir, new_filename)
+
+                try:
+                    # Open the image using Pillow directly from the uploaded file stream
+                    img = Image.open(f)
+
+                    # Convert to RGB to ensure compatibility (strips PNG transparency)
+                    if img.mode in ("RGBA", "P"):
+                        img = img.convert("RGB")
+
+                    # Resize proportionally (change 800, 800 to the preferred max width/height)
+                    img.thumbnail((800, 800), Image.Resampling.LANCZOS)
+
+                    # Save locally with web optimization
+                    img.save(filepath, format="JPEG", optimize=True, quality=85)
+
+                    if new_filename not in img_list:
+                        img_list.append(new_filename)
+
+                    next_iterator += 1
+                except Exception as e:
+                    print(f"Erreur de redimensionnement pour {f.filename}: {e}")
 
     erreurs = []
     if not code:
@@ -135,7 +205,15 @@ def _parse_question_form(form):
     extract_lang("en", "_en")
     extract_lang("ko", "_ko")
 
-    core_data = {"code": code, "rue": rue, "lat": lat, "lng": lng}
+    core_data = {
+        "code": code,
+        "rue": rue,
+        "lat": lat,
+        "lng": lng,
+        "media_images": json.dumps(img_list, ensure_ascii=False) if img_list else None,
+        "media_videos": json.dumps(vid_list, ensure_ascii=False) if vid_list else None,
+    }
+
     return erreurs, core_data, translations_data
 
 
@@ -144,7 +222,9 @@ def admin_question_nouvelle():
     if not admin_required():
         return redirect(url_for("admin.admin"))
     if request.method == "POST":
-        erreurs, core_data, translations_data = _parse_question_form(request.form)
+        erreurs, core_data, translations_data = _parse_question_form(
+            request.form, request.files
+        )
 
         if not erreurs and Question.query.filter_by(code=core_data["code"]).first():
             erreurs.append(f"Le code {core_data['code']} est déjà utilisé.")
@@ -185,7 +265,9 @@ def admin_question_modifier(qid):
         abort(404)
 
     if request.method == "POST":
-        erreurs, core_data, translations_data = _parse_question_form(request.form)
+        erreurs, core_data, translations_data = _parse_question_form(
+            request.form, request.files
+        )
         existing = Question.query.filter_by(code=core_data["code"]).first()
         if existing and existing.id != qid:
             erreurs.append("Ce code est déjà utilisé par une autre question.")
@@ -202,6 +284,40 @@ def admin_question_modifier(qid):
         # Update core
         q.code = core_data["code"]
         q.rue = core_data["rue"]
+        q.lat = core_data["lat"]
+        q.lng = core_data["lng"]
+
+        # 1. Gather the OLD images before overwriting
+        old_images = []
+        if q.media_images:
+            try:
+                old_images = json.loads(q.media_images)
+            except Exception:
+                pass
+
+        # 2. Gather the NEW images from the parsed form
+        new_images = []
+        if core_data["media_images"]:
+            try:
+                new_images = json.loads(core_data["media_images"])
+            except Exception:
+                pass
+
+        # 3. Find deleted images and remove physical files
+        images_to_delete = set(old_images) - set(new_images)
+        if images_to_delete:
+            img_dir = os.path.join(current_app.static_folder, "images", "plaques")
+            for filename in images_to_delete:
+                filepath = os.path.join(img_dir, filename)
+                try:
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                except Exception as e:
+                    print(f"Erreur de suppression pour {filename}: {e}")
+
+        # 4. Now safely overwrite the database column
+        q.media_images = core_data["media_images"]
+        q.media_videos = core_data["media_videos"]
 
         # Update or Add translations
         for lang_code, t_data in translations_data.items():
@@ -239,6 +355,10 @@ def admin_question_modifier(qid):
         else None
     )
 
+    # Reconstruct comma-separated strings for the textarea inputs
+    img_str = ",\n".join(json.loads(q.media_images)) if q.media_images else ""
+    vid_str = ",\n".join(json.loads(q.media_videos)) if q.media_videos else ""
+
     form = {
         "code": q.code,
         "rue": q.rue,
@@ -265,6 +385,8 @@ def admin_question_modifier(qid):
         "reponse_ko": t_ko.reponse if t_ko else "",
         "commentaire_bon_ko": t_ko.commentaire_bon if t_ko else "",
         "commentaire_mauvais_ko": t_ko.commentaire_mauvais if t_ko else "",
+        "media_images": img_str,
+        "media_videos": vid_str,
     }
 
     return render_template(
@@ -294,6 +416,20 @@ def admin_question_supprimer(qid):
     if not q:
         abort(404)
     nom = q.rue
+
+    # 1. Delete physical image files from the server
+    if q.media_images:
+        try:
+            images_to_delete = json.loads(q.media_images)
+            img_dir = os.path.join(current_app.static_folder, "images", "plaques")
+            for filename in images_to_delete:
+                filepath = os.path.join(img_dir, filename)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+        except Exception as e:
+            print(f"Erreur lors de la suppression des images pour {nom}: {e}")
+
+    # 2. Delete database records
     ReponseLog.query.filter_by(question_id=qid).delete()
     db.session.delete(q)
     db.session.commit()
@@ -367,3 +503,31 @@ def admin_logs():
         max_daily=max_daily,
         score_dist=dict(score_dist),
     )
+
+
+def clean_orphaned_images():
+    """Deletes physical images from static/images/plaques/ that are no longer in the DB."""
+    img_dir = os.path.join(current_app.static_folder, "images", "plaques")
+    if not os.path.exists(img_dir):
+        return 0
+
+    # 1. Gather all active image filenames from the database
+    active_images = set()
+    for q in Question.query.filter(Question.media_images.isnot(None)).all():
+        try:
+            active_images.update(json.loads(q.media_images))
+        except Exception:
+            pass
+
+    # 2. Compare against physical files and delete orphans
+    deleted_count = 0
+    for filename in os.listdir(img_dir):
+        if filename not in active_images:
+            filepath = os.path.join(img_dir, filename)
+            try:
+                os.remove(filepath)
+                deleted_count += 1
+            except Exception as e:
+                print(f"Failed to delete {filename}: {e}")
+
+    return deleted_count
