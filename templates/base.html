@@ -1,301 +1,660 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="{{ current_lang }}">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>Quiz France Seorae</title>
-  <link rel="icon" type="image/png" href="/static/lfs-logo-white-transparent.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <!-- Prevent flash of wrong theme -->
-  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
-  <style>
-    :root {
-      --bleu:  #002395;
-      --rouge: #ED2939;
-      --blanc: #FFFFFF;
-      --creme: #FDF6EC;
-      --or:    #C8A84B;
-      --gris:  #6B7280;
-      --ombre: rgba(0,35,149,0.12);
-      --bg-surface:     #F9FAFB;
-      --border-light:   #E5E7EB;
-      --text-primary:   #1a1a2e;
-      --text-secondary: #374151;
-      --hover-light:    #EEF1FF;
-    }
-
-    /* ── DARK THEME ── */
-    html[data-theme="dark"] {
-      --bleu:  #4A7BF7;
-      --rouge: #FF5A6A;
-      --blanc: #1E1E2E;
-      --creme: #121220;
-      --or:    #D4B85A;
-      --gris:  #9CA3AF;
-      --ombre: rgba(0,0,0,0.35);
-      --bg-surface:     #1a1a2e;
-      --border-light:   #374151;
-      --text-primary:   #E5E7EB;
-      --text-secondary: #D1D5DB;
-      --hover-light:    #2a2a3e;
-    }
-    html[data-theme="dark"] header { background: #0D1533; }
-    html[data-theme="dark"] .result-bon { background: #0F2A1A; border-color: #15803D; }
-    html[data-theme="dark"] .result-mauvais { background: #2A0F0F; border-color: #7F1D1D; }
-    html[data-theme="dark"] .alerte { background: #2A0F0F; border-color: #7F1D1D; }
-    html[data-theme="dark"] .btn-primary:hover { background: #3565D4; }
-    html[data-theme="dark"] .btn-secondary { background: var(--blanc); }
-    html[data-theme="dark"] .alerte-warning { background: #2A2A0F; border-color: #6B6B1D; color: #D4D06A; }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--creme); min-height: 100vh; color: var(--text-primary); }
-
-    /* ── HEADER ── */
-    header {
-      background: var(--bleu);
-      padding: 10px 20px;
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      box-shadow: 0 3px 16px var(--ombre);
-      position: sticky; top: 0; z-index: 100;
-    }
-    .logo {
-      color: var(--blanc);
-      display: flex; align-items: center; gap: 12px;
-      flex-shrink: 0;
-      text-decoration: none;
-      min-width: 0;
-    }
-    .logo-img {
-      height: 44px; width: auto;
-      object-fit: contain;
-      flex-shrink: 0;
-      border-radius: 8px;
-      mix-blend-mode: screen;
-    }
-    .tricolore {
-      display: flex; height: 28px; border-radius: 3px; overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3); flex-shrink: 0;
-    }
-    .tricolore div { width: 10px; }
-    .tricolore .b { background: #002395; }
-    .tricolore .w { background: #FFFFFF; }
-    .tricolore .r { background: #ED2939; }
-    .logo-text {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.15rem; font-weight: 700;
-      white-space: nowrap;
-      color: #FFFFFF;
-    }
-
-    .header-right { display: flex; align-items: center; gap: 8px; }
-
-    .score-badge {
-      background: rgba(255,255,255,0.15); color: #FFFFFF;
-      padding: 5px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
-      border: 1px solid rgba(255,255,255,0.25);
-      white-space: nowrap; flex-shrink: 0;
-    }
-
-    /* ── INLINE SWITCHERS ── */
-    .switchers-wrap {
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 20px; padding: 4px 10px;
-      flex-shrink: 0;
-    }
-    .lang-btn {
-      text-decoration: none; font-size: 1.1rem;
-      opacity: 0.4; transition: opacity 0.2s, transform 0.2s;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .lang-btn:hover { opacity: 0.8; transform: scale(1.1); }
-    .lang-btn.active { opacity: 1; transform: scale(1.1); pointer-events: none; }
-    
-    .theme-divider {
-      width: 1px; height: 18px; background: rgba(255,255,255,0.3); margin: 0 2px;
-    }
-    .theme-toggle {
-      background: none; border: none; cursor: pointer;
-      font-size: 1.1rem; padding: 0; display: flex; align-items: center;
-      transition: transform 0.2s;
-    }
-    .theme-toggle:hover { transform: scale(1.1); }
-
-    /* ── MAIN ── */
-    main { max-width: 680px; margin: 0 auto; padding: 28px 16px 80px; }
-
-    /* ── CARDS ── */
-    .card {
-      background: var(--blanc); border-radius: 20px;
-      padding: 32px 28px; box-shadow: 0 4px 32px var(--ombre);
-      border-top: 5px solid var(--bleu);
-      position: relative; overflow: hidden;
-    }
-    .card::before {
-      content: ''; position: absolute; top: 0; right: 0;
-      width: 120px; height: 120px;
-      background: radial-gradient(circle, rgba(200,168,75,0.08) 0%, transparent 70%);
-    }
-
-    /* ── TITLES ── */
-    h1 { font-family: 'Playfair Display', serif; font-size: 1.9rem; color: var(--bleu); margin-bottom: 8px; line-height: 1.2; }
-    h2 { font-family: 'Playfair Display', serif; font-size: 1.35rem; color: var(--bleu); margin-bottom: 14px; }
-    .subtitle { color: var(--gris); font-size: 0.97rem; margin-bottom: 26px; line-height: 1.5; }
-
-    /* ── FORM ── */
-    .form-group { margin-bottom: 18px; }
-    label { display: block; font-weight: 600; font-size: 0.83rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bleu); margin-bottom: 7px; }
-    input[type="text"], input[type="email"], input[type="number"] {
-      width: 100%; padding: 13px 16px; border: 2px solid var(--border-light); border-radius: 12px;
-      font-size: 1rem; font-family: 'DM Sans', sans-serif;
-      transition: border-color 0.2s, box-shadow 0.2s; background: var(--bg-surface);
-      color: var(--text-primary);
-    }
-    input:focus { outline: none; border-color: var(--bleu); box-shadow: 0 0 0 4px rgba(0,35,149,0.08); background: var(--blanc); }
-
-    /* ── BUTTONS ── */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 14px 28px; border-radius: 12px; font-size: 0.97rem; font-weight: 600;
-      font-family: 'DM Sans', sans-serif; cursor: pointer; border: none;
-      transition: all 0.2s; text-decoration: none;
-    }
-    .btn-primary { background: var(--bleu); color: #FFFFFF; width: 100%; }
-    .btn-primary:hover { background: #001a6e; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,35,149,0.3); }
-    .btn-secondary { background: var(--creme); color: var(--bleu); border: 2px solid var(--bleu); width: 100%; }
-    .btn-secondary:hover { background: var(--bleu); color: #FFFFFF; }
-    .btn-rouge { background: var(--rouge); color: #FFFFFF; width: 100%; }
-    .btn-rouge:hover { background: #c0202f; transform: translateY(-1px); }
-    .btn-or { background: var(--or); color: #FFFFFF; width: 100%; }
-    .btn-or:hover { background: #b8943f; transform: translateY(-1px); }
-
-    /* ── ERREUR ── */
-    .alerte { background: #FEF2F2; border: 2px solid #FECACA; color: #DC2626; padding: 11px 15px; border-radius: 10px; font-size: 0.93rem; margin-bottom: 18px; }
-    .alerte-warning { background: #FEF9C3; border: 2px solid #FDE047; color: #854D0E; padding: 11px 15px; border-radius: 10px; font-size: 0.93rem; margin-bottom: 18px; }
-
-    /* ── PROGRESS ── */
-    .progress-bar { background: var(--border-light); border-radius: 999px; height: 10px; overflow: hidden; margin-bottom: 7px; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--bleu), var(--rouge)); border-radius: 999px; transition: width 0.5s ease; }
-    .progress-label { font-size: 0.79rem; color: var(--gris); text-align: right; }
-
-    /* ── ORNEMENT ── */
-    .ornement { text-align: center; font-size: 2rem; margin-bottom: 14px; }
-    .divider { display: flex; align-items: center; gap: 12px; color: var(--or); font-size: 1.1rem; margin: 20px 0; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--or); opacity: 0.4; }
-
-    /* ── CHOIX QCM ── */
-    .choix-list { list-style: none; display: flex; flex-direction: column; gap: 11px; }
-    .choix-item { display: flex; align-items: center; }
-    .choix-btn {
-      width: 100%; padding: 15px 18px; background: var(--bg-surface); border: 2px solid var(--border-light);
-      border-radius: 12px; font-size: 0.97rem; font-family: 'DM Sans', sans-serif;
-      cursor: pointer; text-align: left; transition: all 0.18s; font-weight: 500; color: var(--text-primary);
-    }
-    .choix-btn:hover { border-color: var(--bleu); background: var(--hover-light); color: var(--bleu); }
-    .choix-btn.selected { border-color: var(--bleu); background: var(--bleu); color: #FFFFFF; }
-
-    /* ── RESULT BOX ── */
-    .result-bon { background: #F0FDF4; border: 2px solid #86EFAC; border-radius: 14px; padding: 18px 22px; }
-    .result-mauvais { background: #FEF2F2; border: 2px solid #FECACA; border-radius: 14px; padding: 18px 22px; }
-    .result-icon { font-size: 2.4rem; margin-bottom: 7px; }
-    .result-titre { font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 9px; }
-    .result-commentaire { font-size: 0.93rem; line-height: 1.6; color: var(--text-secondary); }
-
-    /* ── SCORE FINAL ── */
-    .score-cercle {
-      width: 138px; height: 138px; border-radius: 50%;
-      background: var(--bleu); color: #FFFFFF;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      margin: 0 auto 22px; box-shadow: 0 8px 32px rgba(0,35,149,0.3);
-    }
-    .score-nombre { font-family: 'Playfair Display', serif; font-size: 2.7rem; line-height: 1; }
-    .score-sur { font-size: 0.83rem; opacity: 0.8; }
-
-    /* ── CODE INPUT ── */
-    .code-input { font-size: 2rem !important; text-align: center; letter-spacing: 0.3em; font-weight: 700; color: var(--bleu); }
-
-    /* ── TAG rue ── */
-    .rue-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--hover-light); color: var(--bleu); padding: 5px 13px; border-radius: 20px; font-size: 0.83rem; font-weight: 600; margin-bottom: 14px; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 600px) {
-      main { padding: 18px 12px 70px; }
-      .card { padding: 22px 16px; }
-      h1 { font-size: 1.55rem; }
-      header { padding: 8px 12px; }
-      .logo { gap: 8px; flex-shrink: 1; min-width: 0; }
-      .logo-img { height: 36px; }
-      .tricolore { height: 22px; }
-      .tricolore div { width: 7px; }
-      .logo-text { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; }
-      .score-badge { padding: 4px 10px; font-size: 0.75rem; }
-      .hamburger-btn { width: 34px; height: 34px; }
-    }
-    @media (max-width: 400px) {
-      .tricolore { display: none; }
-      .logo-text { font-size: 0.88rem; }
-    }
-  </style>
-  {% block extra_head %}{% endblock %}
-</head>
-<body>
-  <header>
-    <a href="/" class="logo">
-      <img src="/static/lfs-logo-white.png" alt="LFS" class="logo-img" />
-      <div class="tricolore"><div class="b"></div><div class="w"></div><div class="r"></div></div>
-      <span class="logo-text">Quiz France Seorae</span>
-    </a>
-    <div class="header-right">
-      {% if self.score_header() %}
-      <div class="score-badge">{% block score_header %}{% endblock %}</div>
-      {% endif %}
-
-      <!-- Inline Switchers -->
-      <div class="switchers-wrap">
-        {% for lang_code in supported_langs %}
-        <a href="{{ url_for('main.set_lang', lang=lang_code, next=request.path) }}"
-           class="lang-btn {{ 'active' if current_lang == lang_code else '' }}"
-           title="{{ translations[lang_code]['lang_name'] }}">
-          {{ translations[lang_code]['lang_flag'] }}
-        </a>
-        {% endfor %}
-        
-        <div class="theme-divider"></div>
-        
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle Theme">
-          ☀️
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-
-  <script>
-    /* ── Theme Toggle ── */
-    function toggleTheme() {
-      var current = document.documentElement.getAttribute('data-theme') || 'light';
-      var nextTheme = current === 'light' ? 'dark' : 'light';
-      
-      document.documentElement.setAttribute('data-theme', nextTheme);
-      localStorage.setItem('theme', nextTheme);
-      updateThemeUI(nextTheme);
-    }
-
-    function updateThemeUI(theme) {
-      var btn = document.getElementById('themeBtn');
-      if (btn) {
-        btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>Quiz France Seorae</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="/static/lfs-logo-white-transparent.png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Prevent flash of wrong theme -->
+    <script>
+      (function () {
+        var t = localStorage.getItem("theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <style>
+      :root {
+        --bleu: #002395;
+        --rouge: #ed2939;
+        --blanc: #ffffff;
+        --creme: #fdf6ec;
+        --or: #c8a84b;
+        --gris: #6b7280;
+        --ombre: rgba(0, 35, 149, 0.12);
+        --bg-surface: #f9fafb;
+        --border-light: #e5e7eb;
+        --text-primary: #1a1a2e;
+        --text-secondary: #374151;
+        --hover-light: #eef1ff;
       }
-    }
-    
-    // Initialize UI on load
-    updateThemeUI(localStorage.getItem('theme') || 'light');
-  </script>
-</body>
+
+      /* ── DARK THEME ── */
+      html[data-theme="dark"] {
+        --bleu: #4a7bf7;
+        --rouge: #ff5a6a;
+        --blanc: #1e1e2e;
+        --creme: #121220;
+        --or: #d4b85a;
+        --gris: #9ca3af;
+        --ombre: rgba(0, 0, 0, 0.35);
+        --bg-surface: #1a1a2e;
+        --border-light: #374151;
+        --text-primary: #e5e7eb;
+        --text-secondary: #d1d5db;
+        --hover-light: #2a2a3e;
+      }
+      html[data-theme="dark"] header {
+        background: #0d1533;
+      }
+      html[data-theme="dark"] .result-bon {
+        background: #0f2a1a;
+        border-color: #15803d;
+      }
+      html[data-theme="dark"] .result-mauvais {
+        background: #2a0f0f;
+        border-color: #7f1d1d;
+      }
+      html[data-theme="dark"] .alerte {
+        background: #2a0f0f;
+        border-color: #7f1d1d;
+      }
+      html[data-theme="dark"] .btn-primary:hover {
+        background: #3565d4;
+      }
+      html[data-theme="dark"] .btn-secondary {
+        background: var(--blanc);
+      }
+      html[data-theme="dark"] .alerte-warning {
+        background: #2a2a0f;
+        border-color: #6b6b1d;
+        color: #d4d06a;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--creme);
+        min-height: 100vh;
+        color: var(--text-primary);
+      }
+
+      /* ── HEADER ── */
+      header {
+        background: var(--bleu);
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        box-shadow: 0 3px 16px var(--ombre);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .logo {
+        color: var(--blanc);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        text-decoration: none;
+        min-width: 0;
+      }
+      .logo-img {
+        height: 44px;
+        width: auto;
+        object-fit: contain;
+        flex-shrink: 0;
+        border-radius: 8px;
+        mix-blend-mode: screen;
+      }
+      .tricolore {
+        display: flex;
+        height: 28px;
+        border-radius: 3px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
+      }
+      .tricolore div {
+        width: 10px;
+      }
+      .tricolore .b {
+        background: #002395;
+      }
+      .tricolore .w {
+        background: #ffffff;
+      }
+      .tricolore .r {
+        background: #ed2939;
+      }
+      .logo-text {
+        font-family: "Playfair Display", serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        white-space: nowrap;
+        color: #ffffff;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .score-badge {
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* ── INLINE SWITCHERS ── */
+      .switchers-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        padding: 4px 10px;
+        flex-shrink: 0;
+      }
+      .lang-btn {
+        text-decoration: none;
+        font-size: 1.1rem;
+        opacity: 0.35;
+        filter: grayscale(100%);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .lang-btn:hover {
+        opacity: 0.8;
+        filter: grayscale(30%);
+        transform: scale(1.1);
+      }
+      .lang-btn.active {
+        opacity: 1;
+        filter: grayscale(0%);
+        transform: scale(1.25);
+        pointer-events: none;
+      }
+
+      .theme-divider {
+        width: 1px;
+        height: 18px;
+        background: rgba(255, 255, 255, 0.3);
+        margin: 0 2px;
+      }
+      .theme-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        transition: transform 0.2s;
+      }
+      .theme-toggle:hover {
+        transform: scale(1.1);
+      }
+
+      /* ── MAIN ── */
+      main {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 28px 16px 80px;
+      }
+
+      /* ── CARDS ── */
+      .card {
+        background: var(--blanc);
+        border-radius: 20px;
+        padding: 32px 28px;
+        box-shadow: 0 4px 32px var(--ombre);
+        border-top: 5px solid var(--bleu);
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(
+          circle,
+          rgba(200, 168, 75, 0.08) 0%,
+          transparent 70%
+        );
+      }
+
+      /* ── TITLES ── */
+      h1 {
+        font-family: "Playfair Display", serif;
+        font-size: 1.9rem;
+        color: var(--bleu);
+        margin-bottom: 8px;
+        line-height: 1.2;
+      }
+      h2 {
+        font-family: "Playfair Display", serif;
+        font-size: 1.35rem;
+        color: var(--bleu);
+        margin-bottom: 14px;
+      }
+      .subtitle {
+        color: var(--gris);
+        font-size: 0.97rem;
+        margin-bottom: 26px;
+        line-height: 1.5;
+      }
+
+      /* ── FORM ── */
+      .form-group {
+        margin-bottom: 18px;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.83rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--bleu);
+        margin-bottom: 7px;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="number"] {
+        width: 100%;
+        padding: 13px 16px;
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: "DM Sans", sans-serif;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+      }
+      input:focus {
+        outline: none;
+        border-color: var(--bleu);
+        box-shadow: 0 0 0 4px rgba(0, 35, 149, 0.08);
+        background: var(--blanc);
+      }
+
+      /* ── BUTTONS ── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 28px;
+        border-radius: 12px;
+        font-size: 0.97rem;
+        font-weight: 600;
+        font-family: "DM Sans", sans-serif;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: var(--bleu);
+        color: #ffffff;
+        width: 100%;
+      }
+      .btn-primary:hover {
+        background: #001a6e;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 35, 149, 0.3);
+      }
+      .btn-secondary {
+        background: var(--creme);
+        color: var(--bleu);
+        border: 2px solid var(--bleu);
+        width: 100%;
+      }
+      .btn-secondary:hover {
+        background: var(--bleu);
+        color: #ffffff;
+      }
+      .btn-rouge {
+        background: var(--rouge);
+        color: #ffffff;
+        width: 100%;
+      }
+      .btn-rouge:hover {
+        background: #c0202f;
+        transform: translateY(-1px);
+      }
+      .btn-or {
+        background: var(--or);
+        color: #ffffff;
+        width: 100%;
+      }
+      .btn-or:hover {
+        background: #b8943f;
+        transform: translateY(-1px);
+      }
+
+      /* ── ERREUR ── */
+      .alerte {
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        color: #dc2626;
+        padding: 11px 15px;
+        border-radius: 10px;
+        font-size: 0.93rem;
+        margin-bottom: 18px;
+      }
+      .alerte-warning {
+        background: #fef9c3;
+        border: 2px solid #fde047;
+        color: #854d0e;
+        padding: 11px 15px;
+        border-radius: 10px;
+        font-size: 0.93rem;
+        margin-bottom: 18px;
+      }
+
+      /* ── PROGRESS ── */
+      .progress-bar {
+        background: var(--border-light);
+        border-radius: 999px;
+        height: 10px;
+        overflow: hidden;
+        margin-bottom: 7px;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--bleu), var(--rouge));
+        border-radius: 999px;
+        transition: width 0.5s ease;
+      }
+      .progress-label {
+        font-size: 0.79rem;
+        color: var(--gris);
+        text-align: right;
+      }
+
+      /* ── ORNEMENT ── */
+      .ornement {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 14px;
+      }
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--or);
+        font-size: 1.1rem;
+        margin: 20px 0;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--or);
+        opacity: 0.4;
+      }
+
+      /* ── CHOIX QCM ── */
+      .choix-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+      }
+      .choix-item {
+        display: flex;
+        align-items: center;
+      }
+      .choix-btn {
+        width: 100%;
+        padding: 15px 18px;
+        background: var(--bg-surface);
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        font-size: 0.97rem;
+        font-family: "DM Sans", sans-serif;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.18s;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+      .choix-btn:hover {
+        border-color: var(--bleu);
+        background: var(--hover-light);
+        color: var(--bleu);
+      }
+      .choix-btn.selected {
+        border-color: var(--bleu);
+        background: var(--bleu);
+        color: #ffffff;
+      }
+
+      /* ── RESULT BOX ── */
+      .result-bon {
+        background: #f0fdf4;
+        border: 2px solid #86efac;
+        border-radius: 14px;
+        padding: 18px 22px;
+      }
+      .result-mauvais {
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        border-radius: 14px;
+        padding: 18px 22px;
+      }
+      .result-icon {
+        font-size: 2.4rem;
+        margin-bottom: 7px;
+      }
+      .result-titre {
+        font-family: "Playfair Display", serif;
+        font-size: 1.25rem;
+        margin-bottom: 9px;
+      }
+      .result-commentaire {
+        font-size: 0.93rem;
+        line-height: 1.6;
+        color: var(--text-secondary);
+      }
+
+      /* ── SCORE FINAL ── */
+      .score-cercle {
+        width: 138px;
+        height: 138px;
+        border-radius: 50%;
+        background: var(--bleu);
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 22px;
+        box-shadow: 0 8px 32px rgba(0, 35, 149, 0.3);
+      }
+      .score-nombre {
+        font-family: "Playfair Display", serif;
+        font-size: 2.7rem;
+        line-height: 1;
+      }
+      .score-sur {
+        font-size: 0.83rem;
+        opacity: 0.8;
+      }
+
+      /* ── CODE INPUT ── */
+      .code-input {
+        font-size: 2rem !important;
+        text-align: center;
+        letter-spacing: 0.3em;
+        font-weight: 700;
+        color: var(--bleu);
+      }
+
+      /* ── TAG rue ── */
+      .rue-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--hover-light);
+        color: var(--bleu);
+        padding: 5px 13px;
+        border-radius: 20px;
+        font-size: 0.83rem;
+        font-weight: 600;
+        margin-bottom: 14px;
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 600px) {
+        main {
+          padding: 18px 12px 70px;
+        }
+        .card {
+          padding: 22px 16px;
+        }
+        h1 {
+          font-size: 1.55rem;
+        }
+        header {
+          padding: 8px 12px;
+        }
+        .logo {
+          gap: 8px;
+          flex-shrink: 1;
+          min-width: 0;
+        }
+        .logo-img {
+          height: 36px;
+        }
+        .tricolore {
+          height: 22px;
+        }
+        .tricolore div {
+          width: 7px;
+        }
+        .logo-text {
+          font-size: 0.95rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .score-badge {
+          padding: 4px 10px;
+          font-size: 0.75rem;
+        }
+        .hamburger-btn {
+          width: 34px;
+          height: 34px;
+        }
+      }
+      @media (max-width: 400px) {
+        .tricolore {
+          display: none;
+        }
+        .logo-text {
+          font-size: 0.88rem;
+        }
+      }
+    </style>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body>
+    <header>
+      <a href="/" class="logo">
+        <img src="/static/lfs-logo-white.png" alt="LFS" class="logo-img" />
+        <div class="tricolore">
+          <div class="b"></div>
+          <div class="w"></div>
+          <div class="r"></div>
+        </div>
+        <span class="logo-text">Quiz France Seorae</span>
+      </a>
+      <div class="header-right">
+        {% if self.score_header() %}
+        <div class="score-badge">{% block score_header %}{% endblock %}</div>
+        {% endif %}
+
+        <!-- Inline Switchers -->
+        <div class="switchers-wrap">
+          {% for lang_code in supported_langs %}
+          <a
+            href="{{ url_for('main.set_lang', lang=lang_code, next=request.path) }}"
+            class="lang-btn {{ 'active' if current_lang == lang_code else '' }}"
+            title="{{ translations[lang_code]['lang_name'] }}"
+          >
+            {{ translations[lang_code]['lang_flag'] }}
+          </a>
+          {% endfor %}
+
+          <div class="theme-divider"></div>
+
+          <button
+            class="theme-toggle"
+            onclick="toggleTheme()"
+            id="themeBtn"
+            aria-label="Toggle Theme"
+          >
+            ☀️
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <script>
+      /* ── Theme Toggle ── */
+      function toggleTheme() {
+        var current =
+          document.documentElement.getAttribute("data-theme") || "light";
+        var nextTheme = current === "light" ? "dark" : "light";
+
+        document.documentElement.setAttribute("data-theme", nextTheme);
+        localStorage.setItem("theme", nextTheme);
+        updateThemeUI(nextTheme);
+      }
+
+      function updateThemeUI(theme) {
+        var btn = document.getElementById("themeBtn");
+        if (btn) {
+          btn.textContent = theme === "dark" ? "🌙" : "☀️";
+        }
+      }
+
+      // Initialize UI on load
+      updateThemeUI(localStorage.getItem("theme") || "light");
+    </script>
+  </body>
 </html>
