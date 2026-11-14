@@ -319,7 +319,15 @@ def admin_question_modifier(qid):
         q.media_images = core_data["media_images"]
         q.media_videos = core_data["media_videos"]
 
-        # Update or Add translations
+        # Update, Add or Delete translations
+        # 5. Delete removed translations (if user cleared the fields)
+        submitted_langs = translations_data.keys()
+        for existing_t in list(q.translations):
+            if existing_t.language_code not in submitted_langs:
+                db.session.delete(existing_t)
+                q.translations.remove(existing_t)
+
+        # 6. Update or Add submitted translations
         for lang_code, t_data in translations_data.items():
             existing_t = q.get_translation(lang_code)
             if existing_t and existing_t.language_code == lang_code:

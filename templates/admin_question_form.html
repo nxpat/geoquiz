@@ -738,6 +738,14 @@
               <span class="lang-optional"
                 >Optional – leave blank to use French as fallback</span
               >
+              <button
+                type="button"
+                class="btn-cancel"
+                style="padding: 4px 10px; font-size: 0.8rem; margin-left: auto"
+                onclick="clearPanel('en')"
+              >
+                🗑️ Clear fields
+              </button>
             </div>
 
             <div class="form-group">
@@ -757,9 +765,9 @@
               <!-- Hidden input to preserve your backend compatibility -->
               <input
                 type="hidden"
-                name="reponse"
-                id="hidden_reponse_fr"
-                value="{{ form.get('reponse','') }}"
+                name="reponse_en"
+                id="hidden_reponse_en"
+                value="{{ form.get('reponse_en','') }}"
               />
 
               <div class="choix-item">
@@ -775,7 +783,7 @@
                 <input
                   type="text"
                   id="text_A_en"
-                  name="choix1"
+                  name="choix1_en"
                   value="{{ form.get('choix1_en','') }}"
                   placeholder="Choice A"
                   spellcheck="true"
@@ -851,6 +859,14 @@
               <span class="lang-optional"
                 >선택 사항 – 비워두면 프랑스어가 기본으로 사용됩니다</span
               >
+              <button
+                type="button"
+                class="btn-cancel"
+                style="padding: 4px 10px; font-size: 0.8rem; margin-left: auto"
+                onclick="clearPanel('ko')"
+              >
+                🗑️ 필드 지우기
+              </button>
             </div>
 
             <div class="form-group">
@@ -870,9 +886,9 @@
               <!-- Hidden input to preserve your backend compatibility -->
               <input
                 type="hidden"
-                name="reponse"
-                id="hidden_reponse_fr"
-                value="{{ form.get('reponse','') }}"
+                name="reponse_ko"
+                id="hidden_reponse_ko"
+                value="{{ form.get('reponse_ko','') }}"
               />
 
               <div class="choix-item">
@@ -971,6 +987,21 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        // Restore the last opened tab after a page reload (e.g., backend validation errors)
+        const savedLang = localStorage.getItem("activeLangTab");
+        if (savedLang) {
+          document.querySelectorAll(".lang-tab-btn").forEach((btn) => {
+            const onclickAttr = btn.getAttribute("onclick") || "";
+            // Matches both switchLang('en', this) and switchLang("en", this)
+            if (
+              onclickAttr.includes(`'${savedLang}'`) ||
+              onclickAttr.includes(`"${savedLang}"`)
+            ) {
+              switchLang(savedLang, btn);
+            }
+          });
+        }
+
         // --- 1. SETUP: IMAGES ---
         const imageHiddenInput = document.getElementById("media_images_hidden");
         const fileInput = document.getElementById("upload_images_input");
@@ -1297,6 +1328,37 @@
         });
       });
 
+      // --- CLEAR PANEL FUNCTION ---
+      window.clearPanel = function (lang) {
+        if (
+          !confirm(
+            "Voulez-vous vraiment effacer tout le contenu de cette langue ? / Are you sure you want to clear this language?",
+          )
+        )
+          return;
+
+        const panel = document.getElementById("panel-" + lang);
+        if (!panel) return;
+
+        // Clear text inputs and textareas
+        panel.querySelectorAll('input[type="text"], textarea').forEach((el) => {
+          el.value = "";
+          // Trigger the input event to reset the character counter to 0
+          el.dispatchEvent(new Event("input"));
+        });
+
+        // Uncheck radio buttons
+        panel.querySelectorAll('input[type="radio"]').forEach((el) => {
+          el.checked = false;
+        });
+
+        // Clear the hidden reponse field
+        const hiddenReponse = document.getElementById("hidden_reponse_" + lang);
+        if (hiddenReponse) {
+          hiddenReponse.value = "";
+        }
+      };
+
       // --- GLOBAL THEME & LANG FUNCTIONS ---
       function switchLang(lang, btn) {
         document
@@ -1307,6 +1369,9 @@
           .forEach((b) => b.classList.remove("active"));
         document.getElementById("panel-" + lang).classList.add("active");
         btn.classList.add("active");
+
+        // Save the selected tab
+        localStorage.setItem("activeLangTab", lang);
       }
 
       function toggleAdminTheme() {
