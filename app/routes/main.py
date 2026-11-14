@@ -87,7 +87,6 @@ def carte():
 def question():
     init_session()
     lang = get_lang()
-    print("Language:", lang)
 
     if request.method == "POST":
         raw = request.form.get("code", "").strip()
@@ -106,7 +105,6 @@ def question():
             )
         deja_repondu = q.id in session["reponses_ids"]
         q_dict = q.to_dict(lang)
-        print("Question dict:", q_dict)
         return render_template(
             "question.html",
             q=q_dict,
